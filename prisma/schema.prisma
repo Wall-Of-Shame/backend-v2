@@ -9,3 +9,94 @@ datasource db {
 generator client {
   provider = "prisma-client-js"
 }
+
+enum AvatarAnimal {
+  CAT
+  DOG
+  RABBIT
+}
+
+enum AvatarColor {
+  PRIMARY
+  SECONDARY
+  TERTIARY
+}
+
+enum ChallengeType {
+  LAST_TO_COMPLETE
+  NOT_COMPLETED
+}
+
+model User {
+  userId                String        @id @default(uuid())
+  email                 String        @unique
+  fb_reg_token          String?
+  fb_reg_token_time     DateTime?
+  username              String?       @unique
+  name                  String?
+  cfg_deadline_reminder Boolean       @default(true)
+  cfg_invites_notif     Boolean       @default(true)
+  avatar_animal         AvatarAnimal?
+  avatar_color          AvatarColor?
+  avatar_bg             String?
+  owner_of              Challenge[]
+  participating_in      Participant[]
+  contacts_pers1        Contact[]     @relation("contacts_pers1")
+  contacts_pers2        Contact[]     @relation("contacts_pers2")
+  votes_received        Vote[]        @relation("victim_user") // dont query with this
+  votes_given           Vote[]        @relation("accuser_user") // dont query with this
+
+}
+
+model Challenge {
+  challengeId         String        @id @default(uuid())
+  title               String
+  description         String?
+  startAt             DateTime?
+  endAt               DateTime
+  type                ChallengeType
+  ownerId             String
+  owner               User          @relation(fields: [ownerId], references: [userId])
+  participants        Participant[]
+  has_released_result Boolean       @default(false) // only changed through realtime db
+  votes               Vote[] // unwise to query through here, too messy
+
+}
+
+model Participant {
+  challengeId     String
+  challenge       Challenge @relation(fields: [challengeId], references: [challengeId])
+  userId          String
+  user            User      @relation(fields: [userId], references: [userId])
+  invited_at      DateTime  @default(now())
+  joined_at       DateTime?
+  completed_at    DateTime?
+  evidence_link   String?
+  has_been_vetoed Boolean   @default(false)
+  votes_received  Vote[]    @relation("victim_participant")
+  votes_given     Vote[]    @relation("accuser_participant")
+
+  @@id([challengeId, userId])
+}
+
+model Contact {
+  pers1_id String
+  pers1    User   @relation("contacts_pers1", fields: [pers1_id], references: [userId])
+  pers2_id String
+  pers2    User   @relation("contacts_pers2", fields: [pers2_id], references: [userId])
+
+  @@id([pers1_id, pers2_id])
+}
+
+model Vote {
+  challengeId         String
+  challenge           Challenge   @relation(fields: [challengeId], references: [challengeId])
+  victimId            String
+  victim              User        @relation("victim_user", fields: [victimId], references: [userId])
+  accuserId           String
+  accuser             User        @relation("accuser_user", fields: [accuserId], references: [userId])
+  victim_participant  Participant @relation("victim_participant", fields: [challengeId, victimId], references: [challengeId, userId])
+  accuser_participant Participant @relation("accuser_participant", fields: [challengeId, accuserId], references: [challengeId, userId])
+
+  @@unique([challengeId, victimId, accuserId])
+}
