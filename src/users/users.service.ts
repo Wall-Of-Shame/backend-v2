@@ -21,7 +21,7 @@ export class UsersService {
   constructor(private prisma: PrismaService) {}
 
   // Creates a user
-  async create(createUserDto: CreateUserDto): Promise<void> {
+  async create(createUserDto: CreateUserDto): Promise<UserData> {
     try {
       const { email, messagingToken } = createUserDto;
 
@@ -40,6 +40,8 @@ export class UsersService {
           },
         });
       }
+
+      return this.findOne({ email });
     } catch (error) {
       // TODO
     }
@@ -72,8 +74,8 @@ export class UsersService {
   // Finds one user based on userId or email
   // Can return invalid users
   async findOne(args: {
-    userId: string | undefined;
-    email: string | undefined;
+    userId?: string | undefined;
+    email?: string | undefined;
   }): Promise<UserData | null> {
     const { userId, email } = args;
 

@@ -35,8 +35,3 @@ export class UserFriends {
   username: string;
   avatar: Avatar;
 }
-
-export class UserListQuery {
-  operation: 'search' | 'wallGlobal' | 'wallRecents';
-  query?: string; // has to be present if "search" is present
-}
