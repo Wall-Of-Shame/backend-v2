@@ -1,22 +1,18 @@
-import {
-  MessageBody,
-  SubscribeMessage,
-  WebSocketGateway,
-} from '@nestjs/websockets';
+import { Body, Controller, Post } from '@nestjs/common';
 import { UsersService } from 'src/users/users.service';
 import { AuthService } from './auth.service';
 
-@WebSocketGateway()
-export class AuthGateway {
+@Controller('auth')
+export class AuthController {
   constructor(
     private authService: AuthService,
     private userService: UsersService,
   ) {}
 
-  @SubscribeMessage('authLogin')
+  @Post()
   async login(
-    @MessageBody('token') token: string,
-    @MessageBody('messageToken') messagingToken: string,
+    @Body('token') token: string,
+    @Body('messageToken') messagingToken: string,
   ) {
     const email = await this.authService.verifyFirebaseToken({ token });
 

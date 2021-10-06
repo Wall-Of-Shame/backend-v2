@@ -48,9 +48,9 @@ export class UsersService {
   }
 
   // Updates the user details - the usual update for the user.
-  async update(updateUserDto: UpdateUserDto): Promise<void> {
+  async update(userId: string, updateUserDto: UpdateUserDto): Promise<void> {
     try {
-      const { userId, name, username, avatar, settings } = updateUserDto;
+      const { name, username, avatar, settings } = updateUserDto;
 
       await this.prisma.user.update({
         where: {
