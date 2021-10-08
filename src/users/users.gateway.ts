@@ -2,11 +2,13 @@ import {
   WebSocketGateway,
   SubscribeMessage,
   OnGatewayConnection,
+  ConnectedSocket,
 } from '@nestjs/websockets';
 import { UsersService } from './users.service';
 import { UseGuards } from '@nestjs/common';
 import { JwtWsAuthGuard } from 'src/auth/jwt-auth-ws.guard';
 import { Socket } from 'socket.io';
+import { UserList } from './entities/user.entity';
 
 const EVENTS = {
   GlobalLeaderboard: 'globalLeaderboard',
@@ -21,7 +23,8 @@ export class UsersGateway implements OnGatewayConnection {
 
   @UseGuards(JwtWsAuthGuard)
   @SubscribeMessage(EVENTS.GlobalLeaderboard)
-  getGlobalLeaderboard() {
-    return this.usersService.getGlobalLeaderboard();
+  async getGlobalLeaderboard(@ConnectedSocket() socket: Socket) {
+    const results: UserList[] = await this.usersService.getGlobalLeaderboard();
+    socket.emit(EVENTS.GlobalLeaderboard, results);
   }
 }
