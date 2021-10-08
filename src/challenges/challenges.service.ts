@@ -354,7 +354,6 @@ export class ChallengesService {
     challengeId: string,
     updateChallengeDto: UpdateChallengeDto,
   ): Promise<void> {
-    console.log(challengeId);
     const challenge = await this.prisma.challenge.findFirst({
       where: {
         challengeId,
