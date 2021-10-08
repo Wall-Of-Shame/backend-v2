@@ -4,22 +4,23 @@ import {
   OnGatewayConnection,
 } from '@nestjs/websockets';
 import { UsersService } from './users.service';
-
 import { UseGuards } from '@nestjs/common';
-
 import { JwtWsAuthGuard } from 'src/auth/jwt-auth-ws.guard';
-import { Socket } from 'net';
+import { Socket } from 'socket.io';
 
+const EVENTS = {
+  GlobalLeaderboard: 'globalLeaderboard',
+};
 @WebSocketGateway({ transports: ['websocket', 'polling'] })
 export class UsersGateway implements OnGatewayConnection {
   constructor(private readonly usersService: UsersService) {}
 
   async handleConnection(client: Socket) {
-    console.log('Connection established');
+    console.log(`Connection established with ${client.id}`);
   }
 
   @UseGuards(JwtWsAuthGuard)
-  @SubscribeMessage('globalLeaderboard')
+  @SubscribeMessage(EVENTS.GlobalLeaderboard)
   getGlobalLeaderboard() {
     return this.usersService.getGlobalLeaderboard();
   }
