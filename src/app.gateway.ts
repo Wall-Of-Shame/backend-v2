@@ -15,7 +15,7 @@ import { ChallengesService } from './challenges/challenges.service';
 import { UserWsId } from './auth/user.decorator';
 import { VetoedParticipantsDto } from './challenges/dto/vetoed-participants.dto';
 import { WsLogger } from './middleware/ws-logger.middleware';
-import { ChallengesEmitter } from './challenges/challenges.emitter';
+import { AppEmitter } from './app.emitter';
 
 export const EVENTS = {
   connection: 'connection',
@@ -31,7 +31,7 @@ export class AppGateway implements OnGatewayConnection {
   constructor(
     private readonly usersService: UsersService,
     private readonly challengesService: ChallengesService,
-    private readonly challengesEmitter: ChallengesEmitter,
+    private readonly appEmitter: AppEmitter,
   ) {}
 
   private readonly wsLogger = new WsLogger();
@@ -141,7 +141,11 @@ export class AppGateway implements OnGatewayConnection {
     @MessageBody('data') data: VetoedParticipantsDto,
   ) {
     this.wsLogger.log(socket, EVENTS.challengeReleaseResults, 'RECEIVE');
-    await this.challengesService.releaseResults(userId, challengeId, data);
-    await this.challengesEmitter.releaseResultsNotify(this.server, challengeId);
+    // await this.challengesService.releaseResults(userId, challengeId, data);
+    await this.appEmitter.releaseResultsNotify(
+      this.server,
+      challengeId,
+      EVENTS.challengeReleaseResults,
+    );
   }
 }

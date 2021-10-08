@@ -13,6 +13,7 @@ import {
   UserMini,
 } from './entities/challenge.entity';
 import { VetoedParticipantsDto } from './dto/vetoed-participants.dto';
+import { WsException } from '@nestjs/websockets';
 
 @Injectable()
 export class ChallengesService {
@@ -515,7 +516,7 @@ export class ChallengesService {
     });
 
     if (!challenge) {
-      throw new HttpException('Not Found', HttpStatus.NOT_FOUND);
+      throw new WsException('Not Found');
     }
     if (!this.isChallengeOver(challenge.endAt)) {
       throw new HttpException('Bad Request', HttpStatus.BAD_REQUEST);

@@ -6,6 +6,8 @@ import { ChallengesModule } from './challenges/challenges.module';
 import { ProofsModule } from './proofs/proofs.module';
 import { ConfigModule } from '@nestjs/config';
 import { AppGateway } from './app.gateway';
+import { AppEmitter } from './app.emitter';
+import { PrismaService } from './prisma.service';
 
 @Module({
   imports: [
@@ -17,6 +19,6 @@ import { AppGateway } from './app.gateway';
       load: [configuration],
     }),
   ],
-  providers: [AppGateway],
+  providers: [PrismaService, AppEmitter, AppGateway],
 })
 export class AppModule {}
