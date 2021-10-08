@@ -14,6 +14,7 @@ import { MailModule } from './mail/mail.module';
 import { FriendsModule } from './friends/friends.module';
 import { StoreModule } from './store/store.module';
 import { ShameModule } from './shame/shame.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { ShameModule } from './shame/shame.module';
     AuthModule,
     ChallengesModule,
     ProofsModule,
+    ScheduleModule.forRoot(),
     ConfigModule.forRoot({
       load: [configuration],
     }),

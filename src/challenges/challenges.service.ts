@@ -20,10 +20,14 @@ import { SubmitVoteDto } from '../votes/dto/submit-vote.dto';
 import { VoteData } from '../votes/votes.entities';
 import { Challenge, Participant, User } from '@prisma/client';
 import { CHALLENGE_COMPLETION_AWARD } from 'src/store/store.entity';
+import { SchedulerRegistry } from '@nestjs/schedule';
 
 @Injectable()
 export class ChallengesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private readonly schedulerRegistry: SchedulerRegistry,
+  ) {}
 
   // checks if challenge start is before its end
   private isStartBeforeEnd(start: Date | null, end: Date): boolean {
