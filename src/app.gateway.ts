@@ -14,6 +14,7 @@ import { UserList } from './users/entities/user.entity';
 import { ChallengesService } from './challenges/challenges.service';
 import { UserWsId } from './auth/user.decorator';
 import { VetoedParticipantsDto } from './challenges/dto/vetoed-participants.dto';
+import { WsLogger } from './middleware/ws-logger.middleware';
 
 const EVENTS = {
   connection: 'connection',
@@ -35,12 +36,14 @@ export class AppGateway implements OnGatewayConnection {
     private readonly challengesService: ChallengesService,
   ) {}
 
+  private readonly wsLogger = new WsLogger();
+
   @WebSocketServer()
   server: Server;
 
-  async handleConnection(client: Socket) {
-    console.log(`Connection established with ${client.id}`);
-    client.emit(EVENTS.connection, { clientId: client.id }); // success message
+  async handleConnection(socket: Socket) {
+    this.wsLogger.log(socket, EVENTS.connection, 'EMIT');
+    socket.emit(EVENTS.connection, { clientId: socket.id }); // success message
   }
 
   /**
@@ -53,8 +56,14 @@ export class AppGateway implements OnGatewayConnection {
   @UseGuards(JwtWsAuthGuard)
   @SubscribeMessage(EVENTS.leaderboard.globalLeaderboard)
   async getGlobalLeaderboard(@ConnectedSocket() socket: Socket) {
+    this.wsLogger.log(socket, EVENTS.leaderboard.globalLeaderboard, 'RECEIVE');
     const results: UserList[] = await this.usersService.getGlobalLeaderboard();
-    console.log(results);
+    this.wsLogger.log(
+      socket,
+      EVENTS.leaderboard.globalLeaderboard,
+      'EMIT',
+      results,
+    );
     socket.emit(EVENTS.leaderboard.globalLeaderboard, results);
   }
 
@@ -74,6 +83,7 @@ export class AppGateway implements OnGatewayConnection {
     @UserWsId() userId: string,
     @MessageBody('challengeId') challengeId: string,
   ) {
+    this.wsLogger.log(socket, EVENTS.challengeActions.accept, 'RECEIVE');
     await this.challengesService.acceptChallenge(userId, challengeId);
   }
 
@@ -93,6 +103,7 @@ export class AppGateway implements OnGatewayConnection {
     @UserWsId() userId: string,
     @MessageBody('challengeId') challengeId: string,
   ) {
+    this.wsLogger.log(socket, EVENTS.challengeActions.reject, 'RECEIVE');
     await this.challengesService.rejectChallenge(userId, challengeId);
   }
 
@@ -112,6 +123,7 @@ export class AppGateway implements OnGatewayConnection {
     @UserWsId() userId: string,
     @MessageBody('challengeId') challengeId: string,
   ) {
+    this.wsLogger.log(socket, EVENTS.challengeActions.complete, 'RECEIVE');
     await this.challengesService.completeChallenge(userId, challengeId);
   }
 
@@ -135,6 +147,7 @@ export class AppGateway implements OnGatewayConnection {
     @MessageBody('challengeId') challengeId: string,
     @MessageBody('data') data: VetoedParticipantsDto,
   ) {
+    this.wsLogger.log(socket, EVENTS.challengeActions.results, 'RECEIVE');
     await this.challengesService.releaseResults(userId, challengeId, data);
   }
 }
