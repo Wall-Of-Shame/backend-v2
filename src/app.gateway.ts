@@ -15,18 +15,15 @@ import { ChallengesService } from './challenges/challenges.service';
 import { UserWsId } from './auth/user.decorator';
 import { VetoedParticipantsDto } from './challenges/dto/vetoed-participants.dto';
 import { WsLogger } from './middleware/ws-logger.middleware';
+import { ChallengesEmitter } from './challenges/challenges.emitter';
 
-const EVENTS = {
+export const EVENTS = {
   connection: 'connection',
-  leaderboard: {
-    globalLeaderboard: 'globalLeaderboard',
-  },
-  challengeActions: {
-    complete: 'challengeComplete',
-    reject: 'challengeReject',
-    accept: 'challengeAccept',
-    results: 'challengeReleaseResults',
-  },
+  globalLeaderboard: 'globalLeaderboard',
+  challengeComplete: 'challengeComplete',
+  challengeReject: 'challengeReject',
+  challengeAccept: 'challengeAccept',
+  challengeReleaseResults: 'challengeReleaseResults',
 };
 
 @WebSocketGateway({ transports: ['websocket', 'polling'] })
@@ -34,6 +31,7 @@ export class AppGateway implements OnGatewayConnection {
   constructor(
     private readonly usersService: UsersService,
     private readonly challengesService: ChallengesService,
+    private readonly challengesEmitter: ChallengesEmitter,
   ) {}
 
   private readonly wsLogger = new WsLogger();
@@ -54,17 +52,12 @@ export class AppGateway implements OnGatewayConnection {
    * ```
    */
   @UseGuards(JwtWsAuthGuard)
-  @SubscribeMessage(EVENTS.leaderboard.globalLeaderboard)
+  @SubscribeMessage(EVENTS.globalLeaderboard)
   async getGlobalLeaderboard(@ConnectedSocket() socket: Socket) {
-    this.wsLogger.log(socket, EVENTS.leaderboard.globalLeaderboard, 'RECEIVE');
+    this.wsLogger.log(socket, EVENTS.globalLeaderboard, 'RECEIVE');
     const results: UserList[] = await this.usersService.getGlobalLeaderboard();
-    this.wsLogger.log(
-      socket,
-      EVENTS.leaderboard.globalLeaderboard,
-      'EMIT',
-      results,
-    );
-    socket.emit(EVENTS.leaderboard.globalLeaderboard, results);
+    this.wsLogger.log(socket, EVENTS.globalLeaderboard, 'EMIT', results);
+    socket.emit(EVENTS.globalLeaderboard, results);
   }
 
   /**
@@ -77,13 +70,13 @@ export class AppGateway implements OnGatewayConnection {
    * ```
    */
   @UseGuards(JwtWsAuthGuard)
-  @SubscribeMessage(EVENTS.challengeActions.accept)
+  @SubscribeMessage(EVENTS.challengeAccept)
   async acceptChallenge(
     @ConnectedSocket() socket: Socket,
     @UserWsId() userId: string,
     @MessageBody('challengeId') challengeId: string,
   ) {
-    this.wsLogger.log(socket, EVENTS.challengeActions.accept, 'RECEIVE');
+    this.wsLogger.log(socket, EVENTS.challengeAccept, 'RECEIVE');
     await this.challengesService.acceptChallenge(userId, challengeId);
   }
 
@@ -97,13 +90,13 @@ export class AppGateway implements OnGatewayConnection {
    * ```
    */
   @UseGuards(JwtWsAuthGuard)
-  @SubscribeMessage(EVENTS.challengeActions.reject)
+  @SubscribeMessage(EVENTS.challengeReject)
   async rejectChallenge(
     @ConnectedSocket() socket: Socket,
     @UserWsId() userId: string,
     @MessageBody('challengeId') challengeId: string,
   ) {
-    this.wsLogger.log(socket, EVENTS.challengeActions.reject, 'RECEIVE');
+    this.wsLogger.log(socket, EVENTS.challengeReject, 'RECEIVE');
     await this.challengesService.rejectChallenge(userId, challengeId);
   }
 
@@ -117,13 +110,13 @@ export class AppGateway implements OnGatewayConnection {
    * ```
    */
   @UseGuards(JwtWsAuthGuard)
-  @SubscribeMessage(EVENTS.challengeActions.complete)
+  @SubscribeMessage(EVENTS.challengeComplete)
   async completeChallenge(
     @ConnectedSocket() socket: Socket,
     @UserWsId() userId: string,
     @MessageBody('challengeId') challengeId: string,
   ) {
-    this.wsLogger.log(socket, EVENTS.challengeActions.complete, 'RECEIVE');
+    this.wsLogger.log(socket, EVENTS.challengeComplete, 'RECEIVE');
     await this.challengesService.completeChallenge(userId, challengeId);
   }
 
@@ -140,14 +133,15 @@ export class AppGateway implements OnGatewayConnection {
    * ```
    */
   @UseGuards(JwtWsAuthGuard)
-  @SubscribeMessage(EVENTS.challengeActions.results)
+  @SubscribeMessage(EVENTS.challengeReleaseResults)
   async releaseChallengeResults(
     @ConnectedSocket() socket: Socket,
     @UserWsId() userId: string,
     @MessageBody('challengeId') challengeId: string,
     @MessageBody('data') data: VetoedParticipantsDto,
   ) {
-    this.wsLogger.log(socket, EVENTS.challengeActions.results, 'RECEIVE');
+    this.wsLogger.log(socket, EVENTS.challengeReleaseResults, 'RECEIVE');
     await this.challengesService.releaseResults(userId, challengeId, data);
+    await this.challengesEmitter.releaseResultsNotify(this.server, challengeId);
   }
 }
