@@ -20,15 +20,15 @@ cloudinary.config({
 });
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, {
+    cors: {
+      origin: '*',
+    },
+  });
   app.setGlobalPrefix('api/v1');
 
   const configService = app.get(ConfigService);
   const port = configService.get('PORT');
-
-  app.enableCors({
-    origin: '*',
-  });
 
   await app.listen(port);
 }

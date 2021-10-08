@@ -27,7 +27,7 @@ export class AuthService {
       });
       user = await this.usersService.findOne({ email });
     } else {
-      this.usersService.updateToken(email, {
+      await this.usersService.updateToken(email, {
         messagingToken,
       });
     }

@@ -5,7 +5,7 @@ import { UseGuards } from '@nestjs/common';
 
 import { JwtWsAuthGuard } from 'src/auth/jwt-auth-ws.guard';
 
-@WebSocketGateway()
+@WebSocketGateway({ transports: ['websocket', 'polling'] })
 export class UsersGateway {
   constructor(private readonly usersService: UsersService) {}
 
