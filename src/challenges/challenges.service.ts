@@ -350,10 +350,11 @@ export class ChallengesService {
   }
 
   async update(
-    challengeId: string,
     userId: string,
+    challengeId: string,
     updateChallengeDto: UpdateChallengeDto,
   ): Promise<void> {
+    console.log(challengeId);
     const challenge = await this.prisma.challenge.findFirst({
       where: {
         challengeId,
