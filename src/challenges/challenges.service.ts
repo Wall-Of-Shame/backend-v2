@@ -49,16 +49,18 @@ export class ChallengesService {
     createChallengeDto: CreateChallengeDto,
   ): Promise<void> {
     const { participants } = createChallengeDto;
-    const pUserIds: { userId: string }[] = await this.prisma.user.findMany({
-      where: {
-        userId: { in: participants },
-      },
-      select: {
-        userId: true,
-      },
-    });
+    const qUserIds: { userId: string; joined_at?: Date }[] =
+      await this.prisma.user.findMany({
+        where: {
+          userId: { in: participants },
+        },
+        select: {
+          userId: true,
+        },
+      });
 
-    pUserIds.push({ userId });
+    const pUserIds = qUserIds.filter((p) => p.userId !== userId);
+    pUserIds.push({ userId, joined_at: new Date() });
 
     const { title, description, startAt, endAt, type } = createChallengeDto;
     await this.prisma.challenge.create({

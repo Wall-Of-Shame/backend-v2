@@ -6,5 +6,6 @@ import { PrismaService } from 'src/prisma.service';
 @Module({
   controllers: [ChallengesController],
   providers: [PrismaService, ChallengesService],
+  exports: [ChallengesService],
 })
 export class ChallengesModule {}
