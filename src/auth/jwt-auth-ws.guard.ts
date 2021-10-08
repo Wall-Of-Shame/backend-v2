@@ -3,7 +3,7 @@ import { AuthGuard } from '@nestjs/passport';
 
 @Global()
 @Injectable()
-export class JwtWsAuthGuard extends AuthGuard('jwt') {
+export class JwtWsAuthGuard extends AuthGuard('jwt-ws') {
   getRequest(context: ExecutionContext) {
     return context.switchToWs().getClient().handshake;
   }
