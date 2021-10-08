@@ -1,8 +1,7 @@
 import { Prisma } from '.prisma/client';
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
-import isBefore from 'date-fns/isBefore';
-import parseJSON from 'date-fns/parseJSON';
-import orderBy from 'lodash/orderBy';
+import { isBefore, parseJSON } from 'date-fns';
+import { orderBy } from 'lodash';
 import { PrismaService } from 'src/prisma.service';
 import { SubmitProofDto } from 'src/proofs/dto/submit-proof.dto';
 import { CreateChallengeDto } from './dto/create-challenge.dto';
