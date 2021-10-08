@@ -25,7 +25,7 @@ You can consider using `pgadmin` to manage the data and database migrations.
 1. Create a `.env` file containing the private application ids and database connection setting. using `.env.example` for a template.
 1. Run `yarn prisma:generate` to get the type definitions for the Prisma ORM.
 1. Run `yarn prisma:deploy` to load the tables.
-1. Run `yarn start` to start up the server.
+1. Run `yarn start:dev` to start up the server.
 
 Optional: You can seed the database with `yarn prisma db seed`.
 
