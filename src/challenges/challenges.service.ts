@@ -12,6 +12,7 @@ import {
   ChallengeList,
   UserMini,
 } from './entities/challenge.entity';
+import { VetoedParticipantsDto } from './dto/vetoed-participants.dto';
 
 @Injectable()
 export class ChallengesService {
@@ -493,5 +494,71 @@ export class ChallengesService {
         evidence_link: null,
       },
     });
+  }
+
+  async releaseResults(
+    userId: string,
+    challengeId: string,
+    results: VetoedParticipantsDto,
+  ): Promise<void> {
+    const { vetoedParticipants } = results;
+
+    const challenge = await this.prisma.challenge.findFirst({
+      where: { challengeId },
+      select: {
+        challengeId: true,
+        endAt: true,
+        ownerId: true,
+      },
+    });
+
+    if (!challenge) {
+      throw new HttpException('Not Found', HttpStatus.NOT_FOUND);
+    }
+    if (!this.isChallengeOver(challenge.endAt)) {
+      throw new HttpException('Bad Request', HttpStatus.BAD_REQUEST);
+    }
+
+    const participants: string[] = await this.prisma.participant
+      .findMany({
+        where: {
+          challengeId, //  participant instances for this challenge
+          userId: { in: vetoedParticipants }, // users that have been vetoed
+          joined_at: { not: null }, // have actually joined
+          completed_at: { not: null }, // have actually completed
+          user: {
+            // valid users
+            username: { not: null },
+            name: { not: null },
+            avatar_animal: { not: null },
+            avatar_bg: { not: null },
+            avatar_color: { not: null },
+          },
+        },
+        select: {
+          userId: true,
+        },
+      })
+      .then((result) => result.map((p) => p.userId));
+
+    await this.prisma.$transaction([
+      this.prisma.challenge.update({
+        where: {
+          challengeId,
+        },
+        data: {
+          has_released_result: true,
+        },
+      }),
+      this.prisma.participant.updateMany({
+        where: {
+          challengeId,
+          userId: { in: participants },
+        },
+        data: {
+          has_been_vetoed: true,
+        },
+      }),
+    ]);
   }
 }
