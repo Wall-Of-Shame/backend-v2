@@ -1,5 +1,7 @@
 node_modules
 dist
 package-lock.json
+*-error.log
+
 # Keep environment variables out of version control
 .env

@@ -4,8 +4,10 @@ import isBefore from 'date-fns/isBefore';
 import parseJSON from 'date-fns/parseJSON';
 import orderBy from 'lodash/orderBy';
 import { PrismaService } from 'src/prisma.service';
+import { SubmitProofDto } from 'src/proofs/dto/submit-proof.dto';
 import { CreateChallengeDto } from './dto/create-challenge.dto';
 import { UpdateChallengeDto } from './dto/update-challenge.dto';
+import { UploadApiResponse, v2 as cloudinary } from 'cloudinary';
 import {
   ChallengeData,
   ChallengeList,
@@ -432,6 +434,74 @@ export class ChallengesService {
           challengeId,
           userId,
         },
+      },
+    });
+  }
+
+  async submitProof(
+    userId: string,
+    challengeId: string,
+    submitProofDto: SubmitProofDto,
+  ): Promise<void> {
+    const challenges = await this.prisma.participant.findMany({
+      where: {
+        challengeId,
+        userId,
+        joined_at: { not: null },
+      },
+    });
+
+    if (challenges.length === 0) {
+      return;
+    }
+
+    const { data } = submitProofDto; // b64 string
+    const uploadResult: UploadApiResponse = await cloudinary.uploader.upload(
+      data,
+      {
+        folder: challengeId,
+      },
+    );
+
+    if (!uploadResult || !uploadResult.url) {
+      throw new Error('Upload failed.');
+    }
+
+    await this.prisma.participant.update({
+      where: {
+        challengeId_userId: {
+          challengeId,
+          userId,
+        },
+      },
+      data: {
+        evidence_link: uploadResult.url,
+      },
+    });
+  }
+
+  async deleteProof(userId: string, challengeId: string): Promise<void> {
+    const challenges = await this.prisma.participant.findMany({
+      where: {
+        challengeId,
+        userId,
+        joined_at: { not: null },
+      },
+    });
+
+    if (challenges.length === 0) {
+      return;
+    }
+
+    await this.prisma.participant.update({
+      where: {
+        challengeId_userId: {
+          challengeId,
+          userId,
+        },
+      },
+      data: {
+        evidence_link: null,
       },
     });
   }
