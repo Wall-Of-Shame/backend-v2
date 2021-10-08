@@ -5,6 +5,7 @@ import { AuthModule } from './auth/auth.module';
 import { ChallengesModule } from './challenges/challenges.module';
 import { ProofsModule } from './proofs/proofs.module';
 import { ConfigModule } from '@nestjs/config';
+import { AppGateway } from './app.gateway';
 
 @Module({
   imports: [
@@ -16,6 +17,6 @@ import { ConfigModule } from '@nestjs/config';
       load: [configuration],
     }),
   ],
-  providers: [],
+  providers: [AppGateway],
 })
 export class AppModule {}

@@ -115,19 +115,9 @@ export class ChallengesService {
       // see  `POST challenges/`, `PATCH challenges/:challengeId`, `POST challenges/accept`,
       // these are the endpoints that insert rows into participants, and they check for these fields to exist
       function formatChallenge(
-        rawChallenge: typeof participantOf.challenge,
+        c: typeof participantOf.challenge,
       ): ChallengeData {
-        const {
-          challengeId,
-          title,
-          description,
-          startAt,
-          endAt,
-          type,
-          owner,
-          participants,
-          has_released_result,
-        } = rawChallenge;
+        const { owner, participants } = c;
 
         const accepted: UserMini[] = [];
         const pending: UserMini[] = [];
@@ -196,13 +186,13 @@ export class ChallengesService {
 
         // format the challenge
         return {
-          challengeId,
-          title,
-          description: description ?? undefined,
-          startAt: startAt ? startAt.toISOString() : null,
-          endAt: endAt.toISOString(),
-          type: type,
-          hasReleasedResult: has_released_result,
+          challengeId: c.challengeId,
+          title: c.title,
+          description: c.description ?? undefined,
+          startAt: c.startAt ? c.startAt.toISOString() : null,
+          endAt: c.endAt.toISOString(),
+          type: c.type,
+          hasReleasedResult: c.has_released_result,
           owner: {
             userId: owner.userId,
             username: owner.username!,
