@@ -1,4 +1,5 @@
 import { NestFactory } from '@nestjs/core';
+import * as morgan from 'morgan';
 import admin from 'firebase-admin';
 import { AppModule } from './app.module';
 import { v2 as cloudinary } from 'cloudinary';
@@ -29,6 +30,8 @@ async function bootstrap() {
 
   const configService = app.get(ConfigService);
   const port = configService.get('PORT');
+
+  app.use(morgan('dev'));
 
   await app.listen(port);
 }
