@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import admin from 'firebase-admin';
 import { AppModule } from './app.module';
 import { v2 as cloudinary } from 'cloudinary';
+import { ConfigService } from '@nestjs/config';
 
 admin.initializeApp({
   credential: admin.credential.cert({
@@ -21,7 +22,10 @@ cloudinary.config({
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.setGlobalPrefix('api/v1');
-  await app.listen(3000);
+
+  const configService = app.get(ConfigService);
+  const port = configService.get('PORT');
+  await app.listen(port);
 }
 
 bootstrap();
