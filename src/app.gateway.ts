@@ -141,7 +141,7 @@ export class AppGateway implements OnGatewayConnection {
     @MessageBody('data') data: VetoedParticipantsDto,
   ) {
     this.wsLogger.log(socket, EVENTS.challengeReleaseResults, 'RECEIVE');
-    // await this.challengesService.releaseResults(userId, challengeId, data);
+    await this.challengesService.releaseResults(userId, challengeId, data);
     await this.appEmitter.releaseResultsNotify(
       this.server,
       challengeId,

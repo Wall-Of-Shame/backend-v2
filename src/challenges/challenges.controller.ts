@@ -71,6 +71,7 @@ export class ChallengesController {
     return this.challengesService.completeChallenge(userId, challengeId);
   }
 
+  // To be deprecated, use the socket event instead
   @Post(':id/vetoResults')
   @UseGuards(JwtAuthGuard)
   releaseResults(
