@@ -44,6 +44,7 @@ export class UsersService {
       return this.findOne({ email });
     } catch (error) {
       // TODO
+      console.log(error);
     }
   }
 
@@ -68,6 +69,7 @@ export class UsersService {
       });
     } catch (error) {
       // TODO - catch for prisma errors
+      console.log(error);
     }
   }
 
@@ -153,6 +155,7 @@ export class UsersService {
       });
     } catch (error) {
       // TODO: catch for unfound email
+      console.log(error);
     }
   }
 
@@ -183,6 +186,10 @@ export class UsersService {
         })
         .then((result) => result.map((u) => u.userId));
 
+      if (userIds.length === 0) {
+        return [];
+      }
+
       const results = await this.prisma.$queryRaw<UserWithMetaDataResult>`
         SELECT *
         FROM "UserWithMetaData"
@@ -209,6 +216,7 @@ export class UsersService {
       }));
     } catch (error) {
       // TODO - prisma error
+      console.log(error);
     }
   }
 
@@ -244,6 +252,7 @@ export class UsersService {
       }));
     } catch (error) {
       // TODO - prisma error
+      console.log(error);
     }
   }
 
@@ -288,6 +297,7 @@ export class UsersService {
       }));
     } catch (error) {
       // TODO - prisma error
+      console.log(error);
     }
   }
 }
