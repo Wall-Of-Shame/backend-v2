@@ -1,5 +1,5 @@
 import { Prisma } from '.prisma/client';
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable, Param } from '@nestjs/common';
 import { isBefore, parseJSON } from 'date-fns';
 import { orderBy } from 'lodash';
 import { PrismaService } from 'src/prisma.service';
@@ -16,6 +16,7 @@ import { VetoedParticipantsDto } from './dto/vetoed-participants.dto';
 import { WsException } from '@nestjs/websockets';
 import { SubmitVoteDto } from 'src/votes/dto/submit-vote.dto';
 import { VoteData } from 'src/votes/votes.entities';
+import { Challenge, Participant, User } from '@prisma/client';
 
 @Injectable()
 export class ChallengesService {
@@ -47,6 +48,110 @@ export class ChallengesService {
     return isBefore(start, new Date());
   }
 
+  private formatChallenge(
+    c: Challenge & {
+      participants: (Participant & {
+        user: User;
+      })[];
+      owner: User;
+    },
+  ): ChallengeData {
+    const { owner, participants } = c;
+
+    const accepted: UserMini[] = [];
+    const pending: UserMini[] = [];
+    const notCompleted: UserMini[] = [];
+    const completed: UserMini[] = [];
+
+    // for this challenge, organise it into accepted and pending users
+    for (const participant of participants) {
+      const { userId, username, name, avatar_animal, avatar_bg, avatar_color } =
+        participant.user;
+      if (participant.joined_at === null) {
+        /* eslint-disable @typescript-eslint/no-non-null-assertion,no-inner-declarations */
+        // allow for !. in this block => assume that username, name, avatars are all present
+        // see  `POST challenges/`, `PATCH challenges/:challengeId`, `POST challenges/accept`,
+        // these are the endpoints that insert rows into participants, and they check for these fields to exist
+        pending.push({
+          userId: userId,
+          username: username!,
+          name: name!,
+          hasBeenVetoed: participant.has_been_vetoed,
+          completedAt: participant.completed_at?.toISOString(),
+          evidenceLink: participant.evidence_link ?? undefined,
+          avatar: {
+            animal: avatar_animal!,
+            background: avatar_bg!,
+            color: avatar_color!,
+          },
+        });
+      } else {
+        // user has joined
+        if (participant.completed_at) {
+          // completed
+          completed.push({
+            userId: userId,
+            username: username!,
+            name: name!,
+            avatar: {
+              animal: avatar_animal!,
+              background: avatar_bg!,
+              color: avatar_color!,
+            },
+            completedAt: participant.completed_at?.toISOString(),
+            evidenceLink: participant.evidence_link ?? undefined,
+            hasBeenVetoed: participant.has_been_vetoed,
+          });
+        } else {
+          // not completed
+          notCompleted.push({
+            userId: userId,
+            username: username!,
+            name: name!,
+            completedAt: undefined,
+            evidenceLink: undefined,
+            hasBeenVetoed: participant.has_been_vetoed,
+            avatar: {
+              animal: avatar_animal!,
+              background: avatar_bg!,
+              color: avatar_color!,
+            },
+          });
+        }
+      }
+    }
+
+    // format the challenge
+    return {
+      challengeId: c.challengeId,
+      title: c.title,
+      description: c.description ?? undefined,
+      startAt: c.startAt ? c.startAt.toISOString() : null,
+      endAt: c.endAt.toISOString(),
+      type: c.type,
+      hasReleasedResult: c.has_released_result,
+      owner: {
+        userId: owner.userId,
+        username: owner.username!,
+        name: owner.name!,
+        avatar: {
+          animal: owner.avatar_animal!,
+          background: owner.avatar_bg!,
+          color: owner.avatar_color!,
+        },
+      },
+      participantCount: accepted.length,
+      participants: {
+        accepted: {
+          completed,
+          notCompleted,
+        },
+        pending,
+      },
+    };
+    /* eslint-enable @typescript-eslint/no-non-null-assertion,no-inner-declarations */
+  }
+
   private countAccusers(
     votes: {
       victimId: string;
@@ -76,6 +181,11 @@ export class ChallengesService {
       await this.prisma.user.findMany({
         where: {
           userId: { in: participants },
+          username: { not: null },
+          name: { not: null },
+          avatar_animal: { not: null },
+          avatar_bg: { not: null },
+          avatar_color: { not: null },
         },
         select: {
           userId: true,
@@ -127,120 +237,14 @@ export class ChallengesService {
         },
       },
     });
-    /** */
+
     const ongoing: ChallengeData[] = [];
     const pendingStart: ChallengeData[] = [];
     const pendingResponse: ChallengeData[] = [];
     const history: ChallengeData[] = [];
 
-    /* eslint-disable @typescript-eslint/no-non-null-assertion,no-inner-declarations */
     for (const participantOf of participatingInstances) {
-      // allow to do this cause of typing issue of participantOf.challenge
-      // by right should check how to type this properly outside
-      // allow for !. in this block => assume that username, name, avatars are all present
-      // see  `POST challenges/`, `PATCH challenges/:challengeId`, `POST challenges/accept`,
-      // these are the endpoints that insert rows into participants, and they check for these fields to exist
-      function formatChallenge(
-        c: typeof participantOf.challenge,
-      ): ChallengeData {
-        const { owner, participants } = c;
-
-        const accepted: UserMini[] = [];
-        const pending: UserMini[] = [];
-        const notCompleted: UserMini[] = [];
-        const completed: UserMini[] = [];
-
-        // for this challenge, organise it into accepted and pending users
-        for (const participant of participants) {
-          const {
-            userId,
-            username,
-            name,
-            avatar_animal,
-            avatar_bg,
-            avatar_color,
-          } = participant.user;
-          if (participant.joined_at === null) {
-            pending.push({
-              userId: userId,
-              username: username!,
-              name: name!,
-              hasBeenVetoed: participant.has_been_vetoed,
-              completedAt: participant.completed_at?.toISOString(),
-              evidenceLink: participant.evidence_link ?? undefined,
-              avatar: {
-                animal: avatar_animal!,
-                background: avatar_bg!,
-                color: avatar_color!,
-              },
-            });
-          } else {
-            // user has joined
-            if (participant.completed_at) {
-              // completed
-              completed.push({
-                userId: userId,
-                username: username!,
-                name: name!,
-                avatar: {
-                  animal: avatar_animal!,
-                  background: avatar_bg!,
-                  color: avatar_color!,
-                },
-                completedAt: participant.completed_at?.toISOString(),
-                evidenceLink: participant.evidence_link ?? undefined,
-                hasBeenVetoed: participant.has_been_vetoed,
-              });
-            } else {
-              // not completed
-              notCompleted.push({
-                userId: userId,
-                username: username!,
-                name: name!,
-                completedAt: undefined,
-                evidenceLink: undefined,
-                hasBeenVetoed: participant.has_been_vetoed,
-                avatar: {
-                  animal: avatar_animal!,
-                  background: avatar_bg!,
-                  color: avatar_color!,
-                },
-              });
-            }
-          }
-        }
-
-        // format the challenge
-        return {
-          challengeId: c.challengeId,
-          title: c.title,
-          description: c.description ?? undefined,
-          startAt: c.startAt ? c.startAt.toISOString() : null,
-          endAt: c.endAt.toISOString(),
-          type: c.type,
-          hasReleasedResult: c.has_released_result,
-          owner: {
-            userId: owner.userId,
-            username: owner.username!,
-            name: owner.name!,
-            avatar: {
-              animal: owner.avatar_animal!,
-              background: owner.avatar_bg!,
-              color: owner.avatar_color!,
-            },
-          },
-          participantCount: accepted.length,
-          participants: {
-            accepted: {
-              completed,
-              notCompleted,
-            },
-            pending,
-          },
-        };
-      }
-
-      const c: ChallengeData = formatChallenge(participantOf.challenge);
+      const c: ChallengeData = this.formatChallenge(participantOf.challenge);
 
       if (
         this.isChallengeOver(participantOf.challenge.endAt) &&
@@ -268,7 +272,6 @@ export class ChallengesService {
         pendingResponse.push(c);
       }
     }
-    /* eslint-enable @typescript-eslint/no-non-null-assertion,no-inner-declarations */
 
     // TODO: see if the interface needs to be changed since client can organise it
 
@@ -297,79 +300,11 @@ export class ChallengesService {
     });
 
     if (!challenge) {
-      return null;
+      throw new HttpException('Not found', HttpStatus.NOT_FOUND);
     }
 
-    const pending: UserMini[] = [];
-    const notCompleted: UserMini[] = [];
-    const completed: UserMini[] = [];
-
-    for (const participant of challenge.participants) {
-      const { username, name, userId, avatar_animal, avatar_color, avatar_bg } =
-        participant.user;
-
-      // do not include any users not properly initiated
-      if (!username || !name || !avatar_animal || !avatar_color || !avatar_bg) {
-        continue;
-      }
-
-      const formattedUser: UserMini = {
-        userId,
-        username,
-        name,
-        avatar: {
-          animal: avatar_animal,
-          color: avatar_color,
-          background: avatar_bg,
-        },
-        completedAt: participant.completed_at?.toISOString(),
-        evidenceLink: participant.evidence_link ?? undefined,
-        hasBeenVetoed: participant.has_been_vetoed,
-      };
-
-      if (participant.joined_at) {
-        if (participant.completed_at) {
-          completed.push(formattedUser);
-        } else {
-          notCompleted.push(formattedUser);
-        }
-      } else {
-        pending.push(formattedUser);
-      }
-    }
-
-    const {
-      owner,
-      participants,
-      has_released_result,
-      startAt,
-      endAt,
-      ...details
-    } = challenge;
-    return {
-      ...details,
-      startAt: startAt ? startAt.toISOString() : null,
-      endAt: endAt.toISOString(),
-      hasReleasedResult: challenge.has_released_result,
-      participantCount: notCompleted.length + completed.length,
-      owner: {
-        userId: owner.userId,
-        username: owner.username,
-        name: owner.name,
-        avatar: {
-          animal: owner.avatar_animal,
-          color: owner.avatar_color,
-          background: owner.avatar_bg,
-        },
-      },
-      participants: {
-        accepted: {
-          completed,
-          notCompleted,
-        },
-        pending,
-      },
-    };
+    const data: ChallengeData = this.formatChallenge(challenge);
+    return data;
   }
 
   async update(
@@ -382,9 +317,12 @@ export class ChallengesService {
         challengeId,
         ownerId: userId,
       },
+      include: {
+        participants: true,
+      },
     });
     if (!challenge) {
-      throw new HttpException('Unauthorized', HttpStatus.UNAUTHORIZED);
+      throw new HttpException('Not Found', HttpStatus.NOT_FOUND);
     }
 
     const { title, description, startAt, endAt, type } = updateChallengeDto;
@@ -393,7 +331,7 @@ export class ChallengesService {
       : challenge.startAt;
     const endAtDate: Date | null = endAt ? parseJSON(endAt) : challenge.endAt;
     if (!this.isStartBeforeEnd(startAtDate, endAtDate)) {
-      throw new HttpException('Bad reqeust', HttpStatus.BAD_REQUEST);
+      throw new HttpException('Bad request', HttpStatus.BAD_REQUEST);
     }
 
     const args: Prisma.ChallengeUpdateArgs = {
@@ -409,48 +347,130 @@ export class ChallengesService {
       },
     };
 
-    // TODO: handle participants
+    if (updateChallengeDto.participants) {
+      const { participants: reqParticipants } = updateChallengeDto;
+      const participants = await this.prisma.user.findMany({
+        where: {
+          userId: {
+            in: reqParticipants,
+            not: userId, // ensure owner is untouched
+          },
+          // ensure not initiated users cannot be added as participants
+          username: { not: null },
+          name: { not: null },
+          avatar_animal: { not: null },
+          avatar_color: { not: null },
+          avatar_bg: { not: null },
+        },
+        select: {
+          userId: true,
+          fb_reg_token: true,
+          cfg_invites_notif: true,
+        },
+      });
+
+      const newParticipants = participants.filter(
+        (p) => !challenge.participants.find((e) => e.userId === p.userId),
+      );
+      const removedParticipants = challenge.participants.filter(
+        (e) =>
+          e.userId !== challenge.ownerId &&
+          !participants.find((p) => p.userId === e.userId),
+      );
+
+      args.data['participants'] = {
+        createMany: {
+          data: newParticipants.map((p) => ({ userId: p.userId })),
+        },
+        deleteMany: {
+          userId: { in: removedParticipants.map((p) => p.userId) },
+        },
+      };
+    }
 
     await this.prisma.challenge.update(args);
   }
 
   async acceptChallenge(userId: string, challengeId: string): Promise<void> {
-    await this.prisma.participant.update({
-      where: {
-        challengeId_userId: {
+    try {
+      // accept only valid users
+      await this.prisma.user.findFirst({
+        where: {
+          userId,
+          username: { not: null },
+          name: { not: null },
+          avatar_animal: { not: null },
+          avatar_bg: { not: null },
+          avatar_color: { not: null },
+        },
+      });
+    } catch (error) {
+      console.log('TODO: update the error handling path');
+      throw new HttpException(
+        'User not found/properly initialised',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    try {
+      await this.prisma.participant.update({
+        where: {
+          challengeId_userId: {
+            challengeId,
+            userId,
+          },
+        },
+        data: {
+          joined_at: new Date(),
+        },
+      });
+    } catch (error) {
+      const metaFields = this.prisma.customGetMetaFields(error);
+      console.log(error); // TODO: use the correct error instead of catchall
+      await this.prisma.participant.create({
+        data: {
           challengeId,
           userId,
+          joined_at: new Date(),
         },
-      },
-      data: {
-        joined_at: new Date(),
-      },
-    });
+      });
+    }
   }
 
   async completeChallenge(userId: string, challengeId: string): Promise<void> {
-    await this.prisma.participant.update({
-      where: {
-        challengeId_userId: {
-          challengeId,
-          userId,
+    try {
+      await this.prisma.participant.update({
+        where: {
+          challengeId_userId: {
+            challengeId,
+            userId,
+          },
         },
-      },
-      data: {
-        completed_at: new Date(),
-      },
-    });
+        data: {
+          completed_at: new Date(),
+        },
+      });
+    } catch (error) {
+      throw new HttpException(
+        'Challenge and/or user not found',
+        HttpStatus.NOT_FOUND,
+      );
+    }
   }
 
   async rejectChallenge(userId: string, challengeId: string): Promise<void> {
-    await this.prisma.participant.delete({
-      where: {
-        challengeId_userId: {
-          challengeId,
-          userId,
+    try {
+      await this.prisma.participant.delete({
+        where: {
+          challengeId_userId: {
+            challengeId,
+            userId,
+          },
         },
-      },
-    });
+      });
+    } catch (error) {
+      // do nothing
+    }
   }
 
   async submitProof(
@@ -458,16 +478,19 @@ export class ChallengesService {
     challengeId: string,
     submitProofDto: SubmitProofDto,
   ): Promise<void> {
-    const challenges = await this.prisma.participant.findMany({
-      where: {
-        challengeId,
-        userId,
-        joined_at: { not: null },
-      },
-    });
-
-    if (challenges.length === 0) {
-      return;
+    try {
+      await this.prisma.participant.findFirst({
+        where: {
+          challengeId,
+          userId,
+          joined_at: { not: null },
+        },
+      });
+    } catch (error) {
+      throw new HttpException(
+        'Challenge and/or user not found',
+        HttpStatus.NOT_FOUND,
+      );
     }
 
     const { data } = submitProofDto; // b64 string
@@ -479,57 +502,76 @@ export class ChallengesService {
     );
 
     if (!uploadResult || !uploadResult.url) {
-      throw new Error('Upload failed.');
+      // cloudinary error
+      throw new HttpException('Server error', HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
-    await this.prisma.participant.update({
-      where: {
-        challengeId_userId: {
-          challengeId,
-          userId,
+    try {
+      await this.prisma.participant.update({
+        where: {
+          challengeId_userId: {
+            challengeId,
+            userId,
+          },
         },
-      },
-      data: {
-        evidence_link: uploadResult.url,
-      },
-    });
+        data: {
+          // completed_at: new Date(), // based on new workflow
+          evidence_link: uploadResult.url,
+        },
+      });
+    } catch (error) {
+      // should not happen based on the previous check error
+      throw new HttpException('Server error', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
   }
 
   async deleteProof(userId: string, challengeId: string): Promise<void> {
-    const challenges = await this.prisma.participant.findMany({
-      where: {
-        challengeId,
-        userId,
-        joined_at: { not: null },
-      },
-    });
-
-    if (challenges.length === 0) {
-      return;
-    }
-
-    await this.prisma.participant.update({
-      where: {
-        challengeId_userId: {
+    try {
+      await this.prisma.participant.findFirst({
+        where: {
           challengeId,
           userId,
+          joined_at: { not: null },
         },
-      },
-      data: {
-        evidence_link: null,
-      },
-    });
+      });
+    } catch (error) {
+      throw new HttpException(
+        'Challenge and/or user not found',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    try {
+      await this.prisma.participant.update({
+        where: {
+          challengeId_userId: {
+            challengeId,
+            userId,
+          },
+        },
+        data: {
+          evidence_link: null,
+        },
+      });
+    } catch (error) {
+      // should not happen based on the previous check error
+      throw new HttpException('Server error', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
   }
 
   async releaseResults(
     userId: string,
     challengeId: string,
     results: VetoedParticipantsDto,
+    opType: 'ws' | 'http' = 'http',
   ): Promise<void> {
     const { vetoedParticipants } = results;
 
     const challenge = await this.prisma.challenge.findFirst({
-      where: { challengeId },
+      where: {
+        challengeId,
+        ownerId: userId,
+      },
       select: {
         challengeId: true,
         endAt: true,
@@ -538,10 +580,18 @@ export class ChallengesService {
     });
 
     if (!challenge) {
-      throw new WsException('Not Found');
+      if (opType === 'ws') {
+        throw new WsException('Not found');
+      } else if (opType === 'http') {
+        throw new HttpException('Not found', HttpStatus.NOT_FOUND);
+      }
     }
     if (!this.isChallengeOver(challenge.endAt)) {
-      throw new HttpException('Bad Request', HttpStatus.BAD_REQUEST);
+      if (opType === 'ws') {
+        throw new WsException('Bad request');
+      } else if (opType === 'http') {
+        throw new HttpException('Bad request', HttpStatus.BAD_REQUEST);
+      }
     }
 
     const participants: string[] = await this.prisma.participant
@@ -587,17 +637,17 @@ export class ChallengesService {
     ]);
   }
 
+  // TODO
   async submitVote(
     userId: string,
     challengeId: string,
     voteData: SubmitVoteDto,
   ): Promise<void> {
-    const participant = await this.prisma.participant.findUnique({
+    const participant = await this.prisma.participant.findFirst({
       where: {
-        challengeId_userId: {
-          challengeId,
-          userId,
-        },
+        challengeId,
+        userId,
+        joined_at: { not: null },
       },
     });
     if (!participant) {
@@ -631,12 +681,11 @@ export class ChallengesService {
   }
 
   async getVotes(userId: string, challengeId: string): Promise<VoteData[]> {
-    const participant = await this.prisma.participant.findUnique({
+    const participant = await this.prisma.participant.findFirst({
       where: {
-        challengeId_userId: {
-          challengeId,
-          userId,
-        },
+        challengeId,
+        userId,
+        joined_at: { not: null },
       },
     });
     if (!participant) {
@@ -664,6 +713,7 @@ export class ChallengesService {
     const result: VoteData[] = challenge.participants
       .filter((p) => p.joined_at)
       .map((p) => ({
+        // allow for ! here due to the challenges create/update logic
         victim: {
           userId: p.userId,
           // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
