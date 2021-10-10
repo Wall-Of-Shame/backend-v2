@@ -5,6 +5,17 @@ import { MailService } from 'src/mail/mail.service';
 export class FeedbackController {
   constructor(private readonly mailService: MailService) {}
 
+  /**
+   * Input
+   *
+   * ```
+   * {
+   *  email: string,
+   *  description: string,
+   *  screenshot: string | undefined
+   * }
+   * ```
+   */
   @Post()
   @HttpCode(200)
   sendFeedback(
