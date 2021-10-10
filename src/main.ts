@@ -4,6 +4,7 @@ import admin from 'firebase-admin';
 import { AppModule } from './app.module';
 import { v2 as cloudinary } from 'cloudinary';
 import { ConfigService } from '@nestjs/config';
+import { json, urlencoded } from 'express';
 
 admin.initializeApp({
   credential: admin.credential.cert({
@@ -32,6 +33,8 @@ async function bootstrap() {
   const port = configService.get('PORT');
 
   app.use(morgan('dev'));
+  app.use(json({ limit: '50mb' }));
+  app.use(urlencoded({ extended: true, limit: '50mb' }));
 
   await app.listen(port);
 }
