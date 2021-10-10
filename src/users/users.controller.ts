@@ -7,6 +7,7 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
+import { JwtWsAuthGuard } from 'src/auth/jwt-auth-ws.guard';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { UserId } from 'src/auth/user.decorator';
 import { UsersService } from './users.service';
@@ -18,7 +19,7 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   /**
-   * Expected route:
+   * Route:
    *
    * operation: 'search' | 'wallGlobal'
    */
@@ -36,5 +37,14 @@ export class UsersController {
     } else {
       throw new HttpException('Bad Request', HttpStatus.BAD_REQUEST);
     }
+  }
+
+  @Get('id')
+  @UseGuards(JwtWsAuthGuard)
+  show(@Param('id') targetUserId: string) {
+    if (!targetUserId) {
+      throw new HttpException('Not found', HttpStatus.NOT_FOUND);
+    }
+    return this.usersService.findOne({ userId: targetUserId });
   }
 }
