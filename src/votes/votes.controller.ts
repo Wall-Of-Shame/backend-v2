@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  Param,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { UserId } from 'src/auth/user.decorator';
 import { ChallengesService } from 'src/challenges/challenges.service';
@@ -19,6 +27,7 @@ export class VotesController {
 
   @Post()
   @UseGuards(JwtAuthGuard)
+  @HttpCode(200)
   submitVote(
     @UserId() userId: string,
     @Param('challengeId') challengeId: string,

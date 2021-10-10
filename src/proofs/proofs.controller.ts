@@ -5,6 +5,7 @@ import {
   Param,
   Delete,
   UseGuards,
+  HttpCode,
 } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { UserId } from 'src/auth/user.decorator';
@@ -17,6 +18,7 @@ export class ProofsController {
 
   @Post()
   @UseGuards(JwtAuthGuard)
+  @HttpCode(200)
   submitProof(
     @UserId() userId: string,
     @Param('challengeId') challengeId: string,

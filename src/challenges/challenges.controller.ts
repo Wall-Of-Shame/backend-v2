@@ -7,6 +7,7 @@ import {
   Param,
   Delete,
   UseGuards,
+  HttpCode,
 } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { UserId } from 'src/auth/user.decorator';
@@ -55,18 +56,21 @@ export class ChallengesController {
 
   @Post(':id/accept')
   @UseGuards(JwtAuthGuard)
+  @HttpCode(200)
   acceptChallenge(@UserId() userId: string, @Param('id') challengeId) {
     return this.challengesService.acceptChallenge(userId, challengeId);
   }
 
   @Post(':id/reject')
   @UseGuards(JwtAuthGuard)
+  @HttpCode(200)
   rejectChallenge(@UserId() userId: string, @Param('id') challengeId) {
     return this.challengesService.rejectChallenge(userId, challengeId);
   }
 
   @Post(':id/complete')
   @UseGuards(JwtAuthGuard)
+  @HttpCode(200)
   completeChallenge(@UserId() userId: string, @Param('id') challengeId) {
     return this.challengesService.completeChallenge(userId, challengeId);
   }
@@ -74,6 +78,7 @@ export class ChallengesController {
   // To be deprecated, use the socket event instead
   @Post(':id/vetoResults')
   @UseGuards(JwtAuthGuard)
+  @HttpCode(200)
   releaseResults(
     @UserId() userId: string,
     @Param('id') challengeId,
