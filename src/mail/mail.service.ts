@@ -8,7 +8,7 @@ export class MailService {
 
   async sendFeedback(
     email: string,
-    description: string,
+    feedback: string,
     image: string | undefined,
   ): Promise<void> {
     let imageUrl: string;
@@ -31,7 +31,7 @@ export class MailService {
       template: './feedback',
       context: {
         email,
-        description,
+        feedback,
         imageUrl,
       },
     });
