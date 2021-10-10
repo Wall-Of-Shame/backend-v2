@@ -1,0 +1,17 @@
+<p>Feedback from User</p>
+
+<p>
+    From: {{ email }}
+</p>
+
+<p>Feedback</p>
+<p>{{ feedback }}</p>
+
+<p>Image</p>
+{{#if imageUrl}}
+<img src="{{ imageUrl }}" alt="screenshot" />
+{{else}}
+<p>No image submitted</p>
+{{/if}}
+
+<p>Sent from the backend</p>

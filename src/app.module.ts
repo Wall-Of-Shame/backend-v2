@@ -9,6 +9,8 @@ import { AppGateway } from './app.gateway';
 import { AppEmitter } from './app.emitter';
 import { PrismaService } from './prisma.service';
 import { VotesModule } from './votes/votes.module';
+import { FeedbackModule } from './feedback/feedback.module';
+import { MailModule } from './mail/mail.module';
 
 @Module({
   imports: [
@@ -20,6 +22,8 @@ import { VotesModule } from './votes/votes.module';
       load: [configuration],
     }),
     VotesModule,
+    FeedbackModule,
+    MailModule,
   ],
   providers: [PrismaService, AppEmitter, AppGateway],
 })
