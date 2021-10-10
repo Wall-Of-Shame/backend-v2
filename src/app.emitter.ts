@@ -1,13 +1,17 @@
 import { Injectable } from '@nestjs/common';
+import { WsException } from '@nestjs/websockets';
 import { Server } from 'socket.io';
 import { EVENTS } from 'src/app.gateway';
 import { PrismaService } from 'src/prisma.service';
 import { UsersService } from 'src/users/users.service';
+import { ChallengesService } from './challenges/challenges.service';
+import { ChallengeData } from './challenges/entities/challenge.entity';
 
 @Injectable()
 export class AppEmitter {
   constructor(
     private prisma: PrismaService,
+    private readonly challengesService: ChallengesService,
     private readonly usersService: UsersService,
   ) {}
 
@@ -17,6 +21,25 @@ export class AppEmitter {
     event: string,
   ): Promise<void> {
     await this.emitNewGlobalWall(server, event);
+  }
+
+  async challengeUpdateNotify(
+    server: Server,
+    challengeId: string,
+  ): Promise<void> {
+    try {
+      if (!challengeId) {
+        return;
+      }
+
+      const data: ChallengeData = await this.challengesService.findOne(
+        challengeId,
+      );
+      server.in(challengeId).emit(EVENTS.roomUpdate, data);
+    } catch (error) {
+      console.log(error);
+      throw new WsException('Failed to emit roomUpdate');
+    }
   }
 
   private async emitNewGlobalWall(

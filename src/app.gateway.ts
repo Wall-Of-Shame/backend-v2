@@ -17,7 +17,6 @@ import { UserWsId } from './auth/user.decorator';
 import { VetoedParticipantsDto } from './challenges/dto/vetoed-participants.dto';
 import { WsLogger } from './middleware/ws-logger.middleware';
 import { AppEmitter } from './app.emitter';
-import { ChallengeData } from './challenges/entities/challenge.entity';
 
 export const EVENTS = {
   connection: 'connection',
@@ -28,6 +27,7 @@ export const EVENTS = {
   challengeReleaseResults: 'challengeReleaseResults',
   roomJoin: 'roomJoin',
   roomLeave: 'roomLeave',
+  roomUpdate: 'roomUpdate',
 };
 
 @WebSocketGateway({ transports: ['websocket', 'polling'] })
@@ -59,8 +59,6 @@ export class AppGateway implements OnGatewayConnection {
    * ```
    *
    * Returns:
-   *  ACK:
-   *    <NONE>
    *  EMITS:
    *    ON globalLeaderboard event :: TYPE UserList[]
    */
@@ -94,10 +92,8 @@ export class AppGateway implements OnGatewayConnection {
    * ```
    *
    * Returns:
-   *  ACK:
-   *    TYPE ChallengeData
    *  EMITS:
-   *    TODO
+   *    ON roomUpdate :: TYPE ChallengeData
    */
   @UseGuards(JwtWsAuthGuard)
   @SubscribeMessage(EVENTS.roomJoin)
@@ -110,15 +106,9 @@ export class AppGateway implements OnGatewayConnection {
 
     try {
       if (challengeId) {
-        const challengeData: ChallengeData =
-          await this.challengesService.findOne(challengeId);
-
         socket.join(challengeId);
-
-        // TODO: broadcast
-
+        await this.appEmitter.challengeUpdateNotify(this.server, challengeId);
         this.wsLogger.log(socket, event, 'EMIT');
-        return challengeData;
       }
     } catch (error) {
       console.log(error);
@@ -140,8 +130,6 @@ export class AppGateway implements OnGatewayConnection {
    * Returns:
    *  ACK:
    *    TYPE { roomId: string }
-   *  EMITS:
-   *    TODO
    */
   @UseGuards(JwtWsAuthGuard)
   @SubscribeMessage(EVENTS.roomLeave)
@@ -155,9 +143,6 @@ export class AppGateway implements OnGatewayConnection {
     try {
       if (challengeId) {
         socket.leave(challengeId);
-
-        // TODO: broadcast
-
         this.wsLogger.log(socket, event, 'EMIT');
         return { roomId: challengeId };
       }
@@ -179,10 +164,8 @@ export class AppGateway implements OnGatewayConnection {
    * ```
    *
    * Returns:
-   *  ACK:
-   *    TYPE ChallengeData
    *  EMITS:
-   *    TODO
+   *    ON roomUpdate :: TYPE ChallengeData
    */
   @UseGuards(JwtWsAuthGuard)
   @SubscribeMessage(EVENTS.challengeAccept)
@@ -203,16 +186,9 @@ export class AppGateway implements OnGatewayConnection {
 
     try {
       // TODO: refactor as this is same code as join room
-      const challengeData: ChallengeData = await this.challengesService.findOne(
-        challengeId,
-      );
-
       socket.join(challengeId);
-
-      // TODO: broadcast
-
+      await this.appEmitter.challengeUpdateNotify(this.server, challengeId);
       this.wsLogger.log(socket, event, 'EMIT');
-      return challengeData;
     } catch (error) {
       console.log(error);
       throw new WsException('Failed to join room');
@@ -269,7 +245,7 @@ export class AppGateway implements OnGatewayConnection {
    *
    * Returns:
    *  EMITS:
-   *    TODO
+   *    ON roomUpdate :: TYPE ChallengeData
    */
   @UseGuards(JwtWsAuthGuard)
   @SubscribeMessage(EVENTS.challengeComplete)
@@ -289,7 +265,7 @@ export class AppGateway implements OnGatewayConnection {
     }
 
     try {
-      // TODO: broadcast
+      await this.appEmitter.challengeUpdateNotify(this.server, challengeId);
     } catch (error) {
       console.log(error);
       throw new WsException('Failed to notify room');
@@ -312,7 +288,7 @@ export class AppGateway implements OnGatewayConnection {
    *
    * Returns:
    *  EMITS:
-   *    T
+   *    ON challengeReleaseResults :: TYPE UserList[]
    */
   @UseGuards(JwtWsAuthGuard)
   @SubscribeMessage(EVENTS.challengeReleaseResults)
