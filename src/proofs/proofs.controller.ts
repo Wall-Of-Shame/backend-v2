@@ -11,7 +11,7 @@ import { UserId } from 'src/auth/user.decorator';
 import { ChallengesService } from 'src/challenges/challenges.service';
 import { SubmitProofDto } from './dto/submit-proof.dto';
 
-@Controller(':challengeId/proofs')
+@Controller('challenges/:challengeId/proofs')
 export class ProofsController {
   constructor(private readonly challengesService: ChallengesService) {}
 

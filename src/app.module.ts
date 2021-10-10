@@ -8,6 +8,7 @@ import { ConfigModule } from '@nestjs/config';
 import { AppGateway } from './app.gateway';
 import { AppEmitter } from './app.emitter';
 import { PrismaService } from './prisma.service';
+import { VotesModule } from './votes/votes.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { PrismaService } from './prisma.service';
     ConfigModule.forRoot({
       load: [configuration],
     }),
+    VotesModule,
   ],
   providers: [PrismaService, AppEmitter, AppGateway],
 })

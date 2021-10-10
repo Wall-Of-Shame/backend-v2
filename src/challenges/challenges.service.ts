@@ -14,6 +14,8 @@ import {
 } from './entities/challenge.entity';
 import { VetoedParticipantsDto } from './dto/vetoed-participants.dto';
 import { WsException } from '@nestjs/websockets';
+import { SubmitVoteDto } from 'src/votes/dto/submit-vote.dto';
+import { VoteData } from 'src/votes/votes.entities';
 
 @Injectable()
 export class ChallengesService {
@@ -43,6 +45,26 @@ export class ChallengesService {
       return false;
     }
     return isBefore(start, new Date());
+  }
+
+  private countAccusers(
+    votes: {
+      victimId: string;
+      accuserId: string;
+    }[],
+  ): Map<string, string[]> {
+    const map: Map<string, string[]> = new Map();
+    for (const v of votes) {
+      if (map.has(v.victimId)) {
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        const list = map.get(v.victimId)!;
+        list.push(v.accuserId);
+        map.set(v.victimId, list);
+      } else {
+        map.set(v.victimId, [v.accuserId]);
+      }
+    }
+    return map;
   }
 
   async create(
@@ -563,5 +585,96 @@ export class ChallengesService {
         },
       }),
     ]);
+  }
+
+  async submitVote(
+    userId: string,
+    challengeId: string,
+    voteData: SubmitVoteDto,
+  ): Promise<void> {
+    const participant = await this.prisma.participant.findUnique({
+      where: {
+        challengeId_userId: {
+          challengeId,
+          userId,
+        },
+      },
+    });
+    if (!participant) {
+      throw new HttpException('Not found', HttpStatus.NOT_FOUND);
+    }
+
+    const { victimId } = voteData;
+    const victim = await this.prisma.participant.findUnique({
+      where: {
+        challengeId_userId: {
+          challengeId,
+          userId: victimId,
+        },
+      },
+    });
+    if (!victim) {
+      throw new HttpException('Not found', HttpStatus.NOT_FOUND);
+    }
+
+    // await this.prisma.participant.update({
+    //   where: {
+    //     challengeId_userId: {
+    //       challengeId,
+    //       userId: victimId,
+    //     },
+    //   },
+    //   data: {
+    //     has_been_vetoed: true,
+    //   },
+    // });
+  }
+
+  async getVotes(userId: string, challengeId: string): Promise<VoteData[]> {
+    const participant = await this.prisma.participant.findUnique({
+      where: {
+        challengeId_userId: {
+          challengeId,
+          userId,
+        },
+      },
+    });
+    if (!participant) {
+      throw new HttpException('Not found', HttpStatus.NOT_FOUND);
+    }
+
+    const challenge = await this.prisma.challenge.findUnique({
+      where: { challengeId },
+      include: {
+        votes: {
+          select: {
+            victimId: true,
+            accuserId: true,
+          },
+        },
+        participants: {
+          include: {
+            user: true,
+          },
+        },
+      },
+    });
+
+    const countMap: Map<string, string[]> = this.countAccusers(challenge.votes);
+    const result: VoteData[] = challenge.participants
+      .filter((p) => p.joined_at)
+      .map((p) => ({
+        victim: {
+          userId: p.userId,
+          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+          username: p.user.username!,
+          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+          name: p.user.name!,
+          evidenceLink: p.evidence_link ?? undefined,
+        },
+        accusers: countMap.get(p.userId) ?? [],
+      }));
+
+    return result;
   }
 }
