@@ -637,47 +637,58 @@ export class ChallengesService {
     ]);
   }
 
-  // TODO
   async submitVote(
-    userId: string,
+    accuserId: string,
     challengeId: string,
     voteData: SubmitVoteDto,
   ): Promise<void> {
-    const participant = await this.prisma.participant.findFirst({
-      where: {
-        challengeId,
-        userId,
-        joined_at: { not: null },
-      },
-    });
-    if (!participant) {
-      throw new HttpException('Not found', HttpStatus.NOT_FOUND);
-    }
-
     const { victimId } = voteData;
-    const victim = await this.prisma.participant.findUnique({
-      where: {
-        challengeId_userId: {
+    const doTheyExist = await this.prisma.participant
+      .count({
+        where: {
           challengeId,
-          userId: victimId,
+          OR: [{ userId: accuserId }, { userId: victimId }],
         },
-      },
-    });
-    if (!victim) {
+      })
+      .then((count) => count === 2);
+    if (!doTheyExist) {
       throw new HttpException('Not found', HttpStatus.NOT_FOUND);
     }
 
-    // await this.prisma.participant.update({
-    //   where: {
-    //     challengeId_userId: {
-    //       challengeId,
-    //       userId: victimId,
-    //     },
-    //   },
-    //   data: {
-    //     has_been_vetoed: true,
-    //   },
-    // });
+    const challenge = await this.prisma.challenge.findFirst({
+      where: { challengeId },
+      select: { endAt: true },
+    });
+    if (!challenge || !this.isChallengeOver(challenge.endAt)) {
+      throw new HttpException('Bad request', HttpStatus.BAD_REQUEST);
+    }
+
+    try {
+      const existingVote = await this.prisma.vote.findUnique({
+        where: {
+          challengeId_victimId_accuserId: {
+            challengeId,
+            victimId,
+            accuserId,
+          },
+        },
+      });
+
+      if (existingVote) {
+        return;
+      } else {
+        await this.prisma.vote.create({
+          data: {
+            victimId,
+            accuserId,
+            challengeId,
+          },
+        });
+        return;
+      }
+    } catch (error) {
+      throw new HttpException('Server error', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
   }
 
   async getVotes(userId: string, challengeId: string): Promise<VoteData[]> {
