@@ -44,8 +44,9 @@ export class AppGateway implements OnGatewayConnection {
   server: Server;
 
   async handleConnection(socket: Socket) {
-    socket.emit(EVENTS.connection, { clientId: socket.id }); // success message
-    this.wsLogger.log(socket, EVENTS.connection, 'EMIT');
+    const event = EVENTS.connection;
+    socket.emit(event, { clientId: socket.id }); // success message
+    this.wsLogger.log(socket, event, 'EMIT');
   }
 
   /**
@@ -66,10 +67,19 @@ export class AppGateway implements OnGatewayConnection {
   @UseGuards(JwtWsAuthGuard)
   @SubscribeMessage(EVENTS.globalLeaderboard)
   async getGlobalLeaderboard(@ConnectedSocket() socket: Socket) {
-    this.wsLogger.log(socket, EVENTS.globalLeaderboard, 'RECEIVE');
-    const results: UserList[] = await this.usersService.getGlobalLeaderboard();
-    socket.emit(EVENTS.globalLeaderboard, results);
-    this.wsLogger.log(socket, EVENTS.globalLeaderboard, 'EMIT');
+    const event = EVENTS.globalLeaderboard;
+    this.wsLogger.log(socket, event, 'RECEIVE');
+
+    try {
+      const results: UserList[] =
+        await this.usersService.getGlobalLeaderboard();
+
+      socket.emit(event, results);
+      this.wsLogger.log(socket, event, 'EMIT');
+    } catch (error) {
+      console.log(error);
+      throw new WsException(`Failed to emit ${event}`);
+    }
   }
 
   /**
@@ -95,9 +105,11 @@ export class AppGateway implements OnGatewayConnection {
     @ConnectedSocket() socket: Socket,
     @MessageBody('challengeId') challengeId: string,
   ) {
-    this.wsLogger.log(socket, EVENTS.roomJoin, 'RECEIVE');
-    if (challengeId) {
-      try {
+    const event = EVENTS.roomJoin;
+    this.wsLogger.log(socket, event, 'RECEIVE');
+
+    try {
+      if (challengeId) {
         const challengeData: ChallengeData =
           await this.challengesService.findOne(challengeId);
 
@@ -105,12 +117,12 @@ export class AppGateway implements OnGatewayConnection {
 
         // TODO: broadcast
 
-        this.wsLogger.log(socket, EVENTS.roomJoin, 'EMIT');
+        this.wsLogger.log(socket, event, 'EMIT');
         return challengeData;
-      } catch (e) {
-        console.log(e);
-        throw new WsException('ChallengeId not found');
       }
+    } catch (error) {
+      console.log(error);
+      throw new WsException('ChallengeId not found');
     }
   }
 
@@ -137,19 +149,21 @@ export class AppGateway implements OnGatewayConnection {
     @ConnectedSocket() socket: Socket,
     @MessageBody('challengeId') challengeId: string,
   ) {
-    this.wsLogger.log(socket, EVENTS.roomLeave, 'RECEIVE');
-    if (challengeId) {
-      try {
+    const event = EVENTS.roomLeave;
+    this.wsLogger.log(socket, event, 'RECEIVE');
+
+    try {
+      if (challengeId) {
         socket.leave(challengeId);
 
         // TODO: broadcast
 
-        this.wsLogger.log(socket, EVENTS.roomLeave, 'EMIT');
+        this.wsLogger.log(socket, event, 'EMIT');
         return { roomId: challengeId };
-      } catch (e) {
-        console.log(e);
-        // do nothing
       }
+    } catch (error) {
+      console.log(error);
+      // do nothing
     }
   }
 
@@ -163,6 +177,12 @@ export class AppGateway implements OnGatewayConnection {
    *  challengeId: string,
    * }
    * ```
+   *
+   * Returns:
+   *  ACK:
+   *    TYPE ChallengeData
+   *  EMITS:
+   *    TODO
    */
   @UseGuards(JwtWsAuthGuard)
   @SubscribeMessage(EVENTS.challengeAccept)
@@ -171,7 +191,8 @@ export class AppGateway implements OnGatewayConnection {
     @UserWsId() userId: string,
     @MessageBody('challengeId') challengeId: string,
   ) {
-    this.wsLogger.log(socket, EVENTS.challengeAccept, 'RECEIVE');
+    const event = EVENTS.challengeAccept;
+    this.wsLogger.log(socket, event, 'RECEIVE');
 
     try {
       await this.challengesService.acceptChallenge(userId, challengeId);
@@ -190,7 +211,7 @@ export class AppGateway implements OnGatewayConnection {
 
       // TODO: broadcast
 
-      this.wsLogger.log(socket, EVENTS.roomJoin, 'EMIT');
+      this.wsLogger.log(socket, event, 'EMIT');
       return challengeData;
     } catch (error) {
       console.log(error);
@@ -208,6 +229,10 @@ export class AppGateway implements OnGatewayConnection {
    *  challengeId: string,
    * }
    * ```
+   *
+   * Returns:
+   *  ACK:
+   *    TYPE { roomId: string }
    */
   @UseGuards(JwtWsAuthGuard)
   @SubscribeMessage(EVENTS.challengeReject)
@@ -216,13 +241,14 @@ export class AppGateway implements OnGatewayConnection {
     @UserWsId() userId: string,
     @MessageBody('challengeId') challengeId: string,
   ) {
-    this.wsLogger.log(socket, EVENTS.challengeReject, 'RECEIVE');
+    const event = EVENTS.challengeReject;
+    this.wsLogger.log(socket, event, 'RECEIVE');
 
     try {
       await this.challengesService.rejectChallenge(userId, challengeId);
       socket.leave(challengeId);
 
-      this.wsLogger.log(socket, EVENTS.challengeReject, 'EMIT');
+      this.wsLogger.log(socket, event, 'EMIT');
       return { roomId: challengeId };
     } catch (error) {
       console.log(error);
@@ -231,6 +257,8 @@ export class AppGateway implements OnGatewayConnection {
   }
 
   /**
+   * Handles the challengeComplete event.
+   *
    * Expecting:
    *
    * ```
@@ -238,6 +266,10 @@ export class AppGateway implements OnGatewayConnection {
    *  challengeId: string,
    * }
    * ```
+   *
+   * Returns:
+   *  EMITS:
+   *    TODO
    */
   @UseGuards(JwtWsAuthGuard)
   @SubscribeMessage(EVENTS.challengeComplete)
@@ -246,7 +278,8 @@ export class AppGateway implements OnGatewayConnection {
     @UserWsId() userId: string,
     @MessageBody('challengeId') challengeId: string,
   ) {
-    this.wsLogger.log(socket, EVENTS.challengeComplete, 'RECEIVE');
+    const event = EVENTS.challengeComplete;
+    this.wsLogger.log(socket, event, 'RECEIVE');
 
     try {
       await this.challengesService.completeChallenge(userId, challengeId);
@@ -264,6 +297,8 @@ export class AppGateway implements OnGatewayConnection {
   }
 
   /**
+   * Handles the challengeReleaseResults event.
+   *
    * Expecting:
    *
    * ```
@@ -274,6 +309,10 @@ export class AppGateway implements OnGatewayConnection {
    *  }
    * }
    * ```
+   *
+   * Returns:
+   *  EMITS:
+   *    T
    */
   @UseGuards(JwtWsAuthGuard)
   @SubscribeMessage(EVENTS.challengeReleaseResults)
@@ -283,7 +322,9 @@ export class AppGateway implements OnGatewayConnection {
     @MessageBody('challengeId') challengeId: string,
     @MessageBody('data') data: VetoedParticipantsDto,
   ) {
-    this.wsLogger.log(socket, EVENTS.challengeReleaseResults, 'RECEIVE');
+    const event = EVENTS.challengeReleaseResults;
+
+    this.wsLogger.log(socket, event, 'RECEIVE');
     await this.challengesService.releaseResults(
       userId,
       challengeId,
@@ -291,10 +332,6 @@ export class AppGateway implements OnGatewayConnection {
       'ws',
     );
 
-    await this.appEmitter.releaseResultsNotify(
-      this.server,
-      challengeId,
-      EVENTS.challengeReleaseResults,
-    );
+    await this.appEmitter.releaseResultsNotify(this.server, challengeId, event);
   }
 }
