@@ -9,7 +9,7 @@ import {
 } from '@nestjs/websockets';
 import { UsersService } from './users/users.service';
 import { UseGuards } from '@nestjs/common';
-import { JwtWsAuthGuard } from 'src/auth/jwt-auth-ws.guard';
+import { JwtWsAuthGuard } from './auth/jwt-auth-ws.guard';
 import { Server, Socket } from 'socket.io';
 import { UserList } from './users/entities/user.entity';
 import { ChallengesService } from './challenges/challenges.service';

@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import admin from 'firebase-admin';
-import { UserData } from 'src/users/entities/user.entity';
-import { UsersService } from 'src/users/users.service';
+import { UserData } from '../users/entities/user.entity';
+import { UsersService } from '../users/users.service';
 
 export interface JwtPayload {
   sub: string; // userId

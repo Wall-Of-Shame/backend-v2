@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { WsException } from '@nestjs/websockets';
 import { Server } from 'socket.io';
-import { EVENTS } from 'src/app.gateway';
-import { PrismaService } from 'src/prisma.service';
-import { UsersService } from 'src/users/users.service';
+import { EVENTS } from './app.gateway';
+import { PrismaService } from './prisma.service';
+import { UsersService } from './users/users.service';
 import { ChallengesService } from './challenges/challenges.service';
 import { ChallengeData } from './challenges/entities/challenge.entity';
 

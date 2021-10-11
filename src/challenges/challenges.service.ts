@@ -1,9 +1,9 @@
 import { Prisma } from '.prisma/client';
-import { HttpException, HttpStatus, Injectable, Param } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { isBefore, parseJSON } from 'date-fns';
 import { orderBy } from 'lodash';
-import { PrismaService } from 'src/prisma.service';
-import { SubmitProofDto } from 'src/proofs/dto/submit-proof.dto';
+import { PrismaService } from '../prisma.service';
+import { SubmitProofDto } from '../proofs/dto/submit-proof.dto';
 import { CreateChallengeDto } from './dto/create-challenge.dto';
 import { UpdateChallengeDto } from './dto/update-challenge.dto';
 import { UploadApiResponse, v2 as cloudinary } from 'cloudinary';
@@ -14,8 +14,8 @@ import {
 } from './entities/challenge.entity';
 import { VetoedParticipantsDto } from './dto/vetoed-participants.dto';
 import { WsException } from '@nestjs/websockets';
-import { SubmitVoteDto } from 'src/votes/dto/submit-vote.dto';
-import { VoteData } from 'src/votes/votes.entities';
+import { SubmitVoteDto } from '../votes/dto/submit-vote.dto';
+import { VoteData } from '../votes/votes.entities';
 import { Challenge, Participant, User } from '@prisma/client';
 
 @Injectable()

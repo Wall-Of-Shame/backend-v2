@@ -7,9 +7,9 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { JwtWsAuthGuard } from 'src/auth/jwt-auth-ws.guard';
-import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
-import { UserId } from 'src/auth/user.decorator';
+import { JwtWsAuthGuard } from '../auth/jwt-auth-ws.guard';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { UserId } from '../auth/user.decorator';
 import { UsersService } from './users.service';
 
 type IndexOperation = 'search' | 'wallGlobal';

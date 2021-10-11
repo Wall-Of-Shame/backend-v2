@@ -9,8 +9,8 @@ import {
   UseGuards,
   HttpCode,
 } from '@nestjs/common';
-import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
-import { UserId } from 'src/auth/user.decorator';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { UserId } from '../auth/user.decorator';
 import { ChallengesService } from './challenges.service';
 import { CreateChallengeDto } from './dto/create-challenge.dto';
 import { UpdateChallengeDto } from './dto/update-challenge.dto';

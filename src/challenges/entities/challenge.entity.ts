@@ -1,4 +1,4 @@
-import { UserList } from 'src/users/entities/user.entity';
+import { UserList } from '../../users/entities/user.entity';
 
 export type ChallengeType = 'LAST_TO_COMPLETE' | 'NOT_COMPLETED';
 

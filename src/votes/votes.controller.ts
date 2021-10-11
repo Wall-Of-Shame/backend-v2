@@ -7,9 +7,9 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
-import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
-import { UserId } from 'src/auth/user.decorator';
-import { ChallengesService } from 'src/challenges/challenges.service';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { UserId } from '../auth/user.decorator';
+import { ChallengesService } from '../challenges/challenges.service';
 import { SubmitVoteDto } from './dto/submit-vote.dto';
 
 @Controller('challenges/:challengeId/votes')

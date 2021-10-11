@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
-import { ChallengesService } from 'src/challenges/challenges.service';
-import { PrismaService } from 'src/prisma.service';
+import { ChallengesService } from '../challenges/challenges.service';
+import { PrismaService } from '../prisma.service';
 import { ProofsController } from './proofs.controller';
 
 @Module({
