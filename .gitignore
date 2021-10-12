@@ -3,5 +3,8 @@ dist
 package-lock.json
 *-error.log
 
+# Ignore any backups
+backups
+
 # Keep environment variables out of version control
 .env
