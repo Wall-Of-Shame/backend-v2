@@ -11,6 +11,7 @@ import { PrismaService } from './prisma.service';
 import { VotesModule } from './votes/votes.module';
 import { FeedbackModule } from './feedback/feedback.module';
 import { MailModule } from './mail/mail.module';
+import { FriendsModule } from './friends/friends.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { MailModule } from './mail/mail.module';
     VotesModule,
     FeedbackModule,
     MailModule,
+    FriendsModule,
   ],
   providers: [PrismaService, AppEmitter, AppGateway],
 })
