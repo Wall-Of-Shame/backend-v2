@@ -33,6 +33,12 @@ export class FriendRequestsController {
   @Post('reject')
   @UseGuards(JwtAuthGuard)
   reject(@UserId() userId: string, @Body() rejectRequest: RejectRequestDto) {
-    return this.friendRequestsService.reject(userId, rejectRequest);
+    return this.friendRequestsService.delete(userId, rejectRequest);
+  }
+
+  @Post('unfriend')
+  @UseGuards(JwtAuthGuard)
+  unfriend(@UserId() userId: string, @Body() rejectRequest: RejectRequestDto) {
+    return this.friendRequestsService.delete(userId, rejectRequest);
   }
 }

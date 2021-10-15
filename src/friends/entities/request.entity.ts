@@ -1,11 +1,11 @@
 export class CreateRequestDto {
-  usernames: string[];
+  userIds: string[];
 }
 
 export class AcceptRequestDto {
-  username: string;
+  userId: string;
 }
 
 export class RejectRequestDto {
-  username: string;
+  userId: string;
 }
