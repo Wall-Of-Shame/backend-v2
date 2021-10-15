@@ -45,7 +45,6 @@ model User {
   contacts_pers2        Contact[]     @relation("contacts_pers2")
   votes_received        Vote[]        @relation("victim_user") // dont query with this
   votes_given           Vote[]        @relation("accuser_user") // dont query with this
-
 }
 
 model Challenge {
@@ -80,10 +79,11 @@ model Participant {
 }
 
 model Contact {
-  pers1_id String
-  pers1    User   @relation("contacts_pers1", fields: [pers1_id], references: [userId])
-  pers2_id String
-  pers2    User   @relation("contacts_pers2", fields: [pers2_id], references: [userId])
+  pers1_id    String
+  pers1       User      @relation("contacts_pers1", fields: [pers1_id], references: [userId])
+  pers2_id    String
+  pers2       User      @relation("contacts_pers2", fields: [pers2_id], references: [userId])
+  accepted_at DateTime?
 
   @@id([pers1_id, pers2_id])
 }

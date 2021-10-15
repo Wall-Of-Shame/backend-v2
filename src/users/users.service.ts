@@ -5,6 +5,8 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto, UpdateUserMsgToken } from './dto/update-user.dto';
 import { UserData, UserList } from './entities/user.entity';
 
+// TODO: Move the querying from views into prisma service
+
 // Internal partial interface used to handle reading from Prisma view
 interface UserWithMetaData extends User {
   failedCount: number;
