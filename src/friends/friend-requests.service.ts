@@ -15,48 +15,49 @@ export class FriendRequestsService {
     const { userIds: reqIds } = createRequest;
     let users: { userId: string }[] = undefined;
 
-    try {
-      const user = await this.prisma.user.findUnique({
-        where: { userId },
-      });
+    const user = await this.prisma.user.findUnique({
+      where: { userId },
+    });
 
-      if (!user) {
-        throw new HttpException('Not found', HttpStatus.UNAUTHORIZED);
-      }
-    } catch (error) {
-      console.log(error);
-      // allow for server 500 error here: this means prisma query threw some error
-      throw new Error('Unknown error');
+    if (!user) {
+      throw new HttpException('Not found', HttpStatus.UNAUTHORIZED);
+    }
+    if (reqIds.includes(userId)) {
+      throw new HttpException('Cannot befriend self', HttpStatus.BAD_REQUEST);
     }
 
-    try {
-      users = await this.prisma.user.findMany({
-        where: {
-          // cannot befriend yourself
-          username: { in: reqIds.filter((reqId) => reqId !== userId) },
-        },
-        select: {
-          userId: true,
-        },
-      });
-
-      if (users.length === 0) {
-        throw new HttpException(
-          'No valid userIds given',
-          HttpStatus.BAD_REQUEST,
-        );
-      }
-    } catch (error) {
-      console.log(error);
-      // allow for server 500 error here: this means prisma query threw some error
-      throw new Error('Unknown error');
+    users = await this.prisma.user.findMany({
+      where: {
+        // cannot befriend yourself
+        userId: { in: reqIds },
+      },
+      select: {
+        userId: true,
+      },
+    });
+    if (users.length === 0) {
+      throw new HttpException('No valid userIds given', HttpStatus.BAD_REQUEST);
     }
+
+    const exisingContacts = await this.prisma.contact.findMany({
+      where: {
+        pers1_id: userId,
+        pers2_id: { in: reqIds },
+      },
+      select: {
+        pers2_id: true,
+      },
+    });
+
+    const toCreateIds = users
+      .filter((u) => !exisingContacts.find((contact) => contact.pers2_id))
+      .map((u) => u.userId);
 
     try {
       await this.prisma.contact.createMany({
-        data: users.map((u) => ({
+        data: toCreateIds.map((pers2_id) => ({
           pers1_id: userId,
-          pers2_id: u.userId,
+          pers2_id,
         })),
       });
     } catch (error) {
