@@ -1,20 +1,21 @@
 import {
   AvatarAnimal,
   AvatarColor,
+  ChallengeInviteType,
   ChallengeType,
   PrismaClient,
-} from "@prisma/client";
+} from '@prisma/client';
 
 const prisma = new PrismaClient();
 
 const seedEmails: [string, string, string][] = [
-  ["yazmin63", "Yazmin", "yazmin63@example.com"],
-  ["albert", "Albert", "albertha_kub@example.org"],
-  ["daneee", "Dane Crooks", "dane.crooks@example.com"],
-  ["malika28", "Malika", "malika28@example.net"],
-  ["aidenschiller", "Aiden", "aiden.schiller82@example.com"],
-  ["eldredlad", "Eldred", "eldred2@example.net"],
-  ["luellabotsf", "Luella Botsford", "luella_botsford@example.com"],
+  ['yazmin63', 'Yazmin', 'yazmin63@example.com'],
+  ['albert', 'Albert', 'albertha_kub@example.org'],
+  ['daneee', 'Dane Crooks', 'dane.crooks@example.com'],
+  ['malika28', 'Malika', 'malika28@example.net'],
+  ['aidenschiller', 'Aiden', 'aiden.schiller82@example.com'],
+  ['eldredlad', 'Eldred', 'eldred2@example.net'],
+  ['luellabotsf', 'Luella Botsford', 'luella_botsford@example.com'],
 ];
 
 function getRandomInt(max: number): number {
@@ -47,49 +48,49 @@ function getRandomColor(): AvatarColor {
 function getRandomBg(): string {
   const x = getRandomInt(3);
   if (x === 0) {
-    return "#cbe8e0";
+    return '#cbe8e0';
   } else if (x === 1) {
-    return "#c9b2e1";
+    return '#c9b2e1';
   } else {
-    return "#c2d5eb";
+    return '#c2d5eb';
   }
 }
 
 const taskNames: [string, Date, Date][] = [
   [
-    "Watch lectures for CS1010",
+    'Watch lectures for CS1010',
     new Date(2021, 8, 1, 10, 0),
     new Date(2021, 8, 7, 23, 0),
   ],
-  ["Run 8km", new Date(2021, 8, 1, 10, 0), new Date(2021, 8, 7, 23, 0)],
-  ["Do IPPT", new Date(2021, 8, 1, 10, 0), new Date(2021, 8, 15, 23, 0)],
+  ['Run 8km', new Date(2021, 8, 1, 10, 0), new Date(2021, 8, 7, 23, 0)],
+  ['Do IPPT', new Date(2021, 8, 1, 10, 0), new Date(2021, 8, 15, 23, 0)],
   [
-    "Submit that hard af problem set",
+    'Submit that hard af problem set',
     new Date(2021, 8, 1, 10, 0),
     new Date(2021, 8, 15, 23, 0),
   ],
   [
-    "Complete assignment for GET1210",
+    'Complete assignment for GET1210',
     new Date(2021, 8, 1, 10, 0),
     new Date(2021, 8, 15, 23, 0),
   ],
   [
-    "Write research paper for GES1001",
+    'Write research paper for GES1001',
     new Date(2021, 8, 1, 10, 0),
     new Date(2021, 8, 15, 23, 0),
   ],
   [
-    "Apply for internship to shopee",
+    'Apply for internship to shopee',
     new Date(2021, 8, 1, 10, 0),
     new Date(2021, 8, 15, 23, 0),
   ],
   [
-    "Submit PR for the assigned issue",
+    'Submit PR for the assigned issue',
     new Date(2021, 8, 1, 10, 0),
     new Date(2021, 8, 12, 23, 0),
   ],
-  ["Do 100 pushups", new Date(2021, 8, 1, 10, 0), new Date(2021, 8, 3, 23, 0)],
-  ["Do 100 situps", new Date(2021, 8, 1, 10, 0), new Date(2021, 8, 3, 23, 0)],
+  ['Do 100 pushups', new Date(2021, 8, 1, 10, 0), new Date(2021, 8, 3, 23, 0)],
+  ['Do 100 situps', new Date(2021, 8, 1, 10, 0), new Date(2021, 8, 3, 23, 0)],
 ];
 
 async function main() {
@@ -125,6 +126,7 @@ async function main() {
         type: ChallengeType.NOT_COMPLETED,
         ownerId: users[0].userId,
         has_released_result: true,
+        invite_type: ChallengeInviteType.PRIVATE,
         participants: {
           createMany: {
             data: users.map((u) => ({

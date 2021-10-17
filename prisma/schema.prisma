@@ -27,6 +27,11 @@ enum ChallengeType {
   NOT_COMPLETED
 }
 
+enum ChallengeInviteType {
+  PUBLIC
+  PRIVATE
+}
+
 model User {
   userId                String        @id @default(uuid())
   email                 String        @unique
@@ -48,16 +53,17 @@ model User {
 }
 
 model Challenge {
-  challengeId         String        @id @default(uuid())
+  challengeId         String              @id @default(uuid())
   title               String
   description         String?
   startAt             DateTime?
   endAt               DateTime
   type                ChallengeType
+  invite_type         ChallengeInviteType
   ownerId             String
-  owner               User          @relation(fields: [ownerId], references: [userId])
+  owner               User                @relation(fields: [ownerId], references: [userId])
   participants        Participant[]
-  has_released_result Boolean       @default(false) // only changed through realtime db
+  has_released_result Boolean             @default(false) // only changed through realtime db
   votes               Vote[] // unwise to query through here, too messy
 
 }

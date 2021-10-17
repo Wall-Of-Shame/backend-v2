@@ -2,6 +2,8 @@ import { UserList } from '../../users/entities/user.entity';
 
 export type ChallengeType = 'LAST_TO_COMPLETE' | 'NOT_COMPLETED';
 
+export type ChallengeInviteType = 'PRIVATE' | 'PUBLIC';
+
 export class ChallengeData {
   challengeId: string;
   title: string;
@@ -10,6 +12,7 @@ export class ChallengeData {
   endAt: string;
   participantCount: number;
   type: ChallengeType;
+  inviteType: ChallengeInviteType;
   hasReleasedResult: boolean;
   owner: Omit<UserMini, 'hasBeenVetoed'>;
   participants: {

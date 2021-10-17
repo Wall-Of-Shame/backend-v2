@@ -1,4 +1,7 @@
-import { ChallengeType } from '../entities/challenge.entity';
+import {
+  ChallengeInviteType,
+  ChallengeType,
+} from '../entities/challenge.entity';
 
 export class CreateChallengeDto {
   title: string;
@@ -6,6 +9,7 @@ export class CreateChallengeDto {
   startAt: string;
   endAt: string;
   type: ChallengeType;
+  inviteType?: ChallengeInviteType | undefined;
   notificationMessage?: string;
   participants: string[];
 }

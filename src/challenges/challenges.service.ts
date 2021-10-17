@@ -1,4 +1,4 @@
-import { Prisma } from '.prisma/client';
+import { ChallengeInviteType, Prisma } from '.prisma/client';
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { isBefore, parseJSON } from 'date-fns';
 import { orderBy } from 'lodash';
@@ -129,6 +129,7 @@ export class ChallengesService {
       startAt: c.startAt ? c.startAt.toISOString() : null,
       endAt: c.endAt.toISOString(),
       type: c.type,
+      inviteType: c.invite_type,
       hasReleasedResult: c.has_released_result,
       owner: {
         userId: owner.userId,
@@ -195,7 +196,14 @@ export class ChallengesService {
     const pUserIds = qUserIds.filter((p) => p.userId !== userId);
     pUserIds.push({ userId, joined_at: new Date() });
 
-    const { title, description, startAt, endAt, type } = createChallengeDto;
+    const {
+      title,
+      description,
+      startAt,
+      endAt,
+      type,
+      inviteType = ChallengeInviteType.PRIVATE,
+    } = createChallengeDto;
     await this.prisma.challenge.create({
       data: {
         title,
@@ -203,6 +211,7 @@ export class ChallengesService {
         startAt,
         endAt,
         type,
+        invite_type: inviteType,
         ownerId: userId,
         participants: {
           createMany: {
