@@ -10,6 +10,7 @@ import { UploadApiResponse, v2 as cloudinary } from 'cloudinary';
 import {
   ChallengeData,
   ChallengeList,
+  PublicChallengeList,
   UserMini,
 } from './entities/challenge.entity';
 import { VetoedParticipantsDto } from './dto/vetoed-participants.dto';
@@ -17,6 +18,7 @@ import { WsException } from '@nestjs/websockets';
 import { SubmitVoteDto } from '../votes/dto/submit-vote.dto';
 import { VoteData } from '../votes/votes.entities';
 import { Challenge, Participant, User } from '@prisma/client';
+import { features } from 'process';
 
 @Injectable()
 export class ChallengesService {
@@ -223,7 +225,7 @@ export class ChallengesService {
     });
   }
 
-  async findAll(userId: string): Promise<ChallengeList> {
+  async getUserChallenges(userId: string): Promise<ChallengeList> {
     const participatingInstances = await this.prisma.participant.findMany({
       where: {
         userId,
@@ -291,6 +293,45 @@ export class ChallengesService {
       pendingResponse,
       history: sortedHistory,
     };
+  }
+
+  async getPublicChallenges(userId: string): Promise<PublicChallengeList> {
+    const rawPublicChallenges = await this.prisma.challenge.findMany({
+      where: {
+        invite_type: ChallengeInviteType.PUBLIC,
+        startAt: { gte: new Date() },
+        endAt: { gt: new Date() },
+      },
+      include: {
+        participants: {
+          include: {
+            user: true,
+          },
+        },
+        owner: true,
+      },
+    });
+
+    const publicChallenges = rawPublicChallenges.map(this.formatChallenge);
+    const publicChallengesSorted = orderBy(
+      publicChallenges,
+      [(c) => c.participantCount, (c) => c.title],
+      ['desc', 'asc'],
+    );
+
+    const featured: ChallengeData[] = [];
+    const others: ChallengeData[] = [];
+
+    for (let i = 0; i < publicChallengesSorted.length; i++) {
+      const c = publicChallengesSorted[i];
+      if (i < 5) {
+        featured.push(c);
+      } else {
+        others.push(c);
+      }
+    }
+
+    return { featured, others };
   }
 
   async findOne(challengeId: string): Promise<ChallengeData | null> {

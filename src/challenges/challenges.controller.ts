@@ -5,9 +5,11 @@ import {
   Body,
   Patch,
   Param,
-  Delete,
   UseGuards,
   HttpCode,
+  Query,
+  HttpException,
+  HttpStatus,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { UserId } from '../auth/user.decorator';
@@ -15,6 +17,8 @@ import { ChallengesService } from './challenges.service';
 import { CreateChallengeDto } from './dto/create-challenge.dto';
 import { UpdateChallengeDto } from './dto/update-challenge.dto';
 import { VetoedParticipantsDto } from './dto/vetoed-participants.dto';
+
+export type FindAllOpType = 'self' | 'explore';
 
 @Controller('challenges')
 export class ChallengesController {
@@ -31,8 +35,19 @@ export class ChallengesController {
 
   @Get()
   @UseGuards(JwtAuthGuard)
-  findAll(@UserId() userId: string) {
-    return this.challengesService.findAll(userId);
+  findAll(
+    @UserId() userId: string,
+    @Query('operation') operation: FindAllOpType,
+  ) {
+    let op: FindAllOpType = operation ?? 'self';
+
+    if (op === 'self') {
+      return this.challengesService.getUserChallenges(userId);
+    } else if (op === 'explore') {
+      return this.challengesService.getPublicChallenges(userId);
+    } else {
+      throw new HttpException('Invalid operation type', HttpStatus.BAD_REQUEST);
+    }
   }
 
   @Get(':id')

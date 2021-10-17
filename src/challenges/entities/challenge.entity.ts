@@ -31,6 +31,11 @@ export class ChallengeList {
   history: ChallengeData[];
 }
 
+export class PublicChallengeList {
+  featured: ChallengeData[];
+  others: ChallengeData[];
+}
+
 // Internal type. They do not match to any route specifically, but rather used to construct them.
 export type UserMini = Pick<
   UserList,
