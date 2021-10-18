@@ -17,6 +17,7 @@ import { UserWsId } from './auth/user.decorator';
 import { VetoedParticipantsDto } from './challenges/dto/vetoed-participants.dto';
 import { WsLogger } from './middleware/ws-logger.middleware';
 import { AppEmitter } from './app.emitter';
+import { ShamedList } from './challenges/entities/challenge.entity';
 
 export const EVENTS = {
   connection: 'connection',
@@ -28,6 +29,8 @@ export const EVENTS = {
   roomJoin: 'roomJoin',
   roomLeave: 'roomLeave',
   roomUpdate: 'roomUpdate',
+  shameListGet: 'shameListGet',
+  shameListUpdate: 'shameListUpdate',
 };
 
 @WebSocketGateway({ transports: ['websocket', 'polling'] })
@@ -274,6 +277,8 @@ export class AppGateway implements OnGatewayConnection {
 
   /**
    * Handles the challengeReleaseResults event.
+   * => Informs all sockets of new leaderboard
+   * => Informs all sockets of new live update
    *
    * Expecting:
    *
@@ -308,6 +313,32 @@ export class AppGateway implements OnGatewayConnection {
       'ws',
     );
 
-    await this.appEmitter.releaseResultsNotify(this.server, challengeId, event);
+    await this.appEmitter.releaseResultsNotify(this.server, challengeId);
+  }
+
+  /**
+   * Handles the shameListGet event.
+   * For the live updating of the wos.
+   *
+   * Expecting:
+   *
+   * ```
+   * { } // ie nothing
+   * ```
+   *
+   * Returns:
+   *  EMITS:
+   *    ON shameListGet event :: TYPE ShamedList[]
+   */
+  @UseGuards(JwtWsAuthGuard)
+  @SubscribeMessage(EVENTS.shameListGet)
+  async getShameList(@ConnectedSocket() socket: Socket) {
+    const event = EVENTS.challengeReleaseResults;
+
+    this.wsLogger.log(socket, event, 'RECEIVE');
+    const result: ShamedList[] = await this.challengesService.getShameList();
+
+    socket.emit(event, result);
+    this.wsLogger.log(socket, event, 'EMIT');
   }
 }

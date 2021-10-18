@@ -11,6 +11,7 @@ import {
   ChallengeData,
   ChallengeList,
   PublicChallengeList,
+  ShamedList,
   UserMini,
 } from './entities/challenge.entity';
 import { VetoedParticipantsDto } from './dto/vetoed-participants.dto';
@@ -785,6 +786,77 @@ export class ChallengesService {
         },
         accusers: countMap.get(p.userId) ?? [],
       }));
+
+    return result;
+  }
+
+  async getShameList(): Promise<ShamedList[]> {
+    const raw = await this.prisma.participant.findMany({
+      where: {
+        completed_at: null,
+        has_been_vetoed: true,
+      },
+      include: {
+        challenge: true,
+        user: true,
+      },
+      orderBy: {
+        challenge: {
+          endAt: 'desc',
+        },
+        user: {
+          name: 'asc',
+        },
+      },
+      take: 100,
+    });
+
+    const result: ShamedList[] = raw.map((p) => ({
+      id: `${p.userId}:${p.challengeId}`,
+      name: p.user.name,
+      title: p.challenge.title,
+      type: p.has_been_vetoed ? 'cheat' : 'shame',
+      time: p.challenge.endAt.toISOString(), // TODO: change to release_at,
+      avatar: {
+        animal: p.user.avatar_animal,
+        color: p.user.avatar_color,
+        background: p.user.avatar_bg,
+      },
+    }));
+
+    return result;
+  }
+
+  async getShamedListForChallenge(challengeId: string): Promise<ShamedList[]> {
+    const raw = await this.prisma.participant.findMany({
+      where: {
+        challengeId,
+        completed_at: null,
+        has_been_vetoed: true,
+      },
+      include: {
+        challenge: true,
+        user: true,
+      },
+      orderBy: {
+        user: {
+          name: 'asc',
+        },
+      },
+    });
+
+    const result: ShamedList[] = raw.map((p) => ({
+      id: `${p.userId}:${p.challengeId}`,
+      name: p.user.name,
+      title: p.challenge.title,
+      type: p.has_been_vetoed ? 'cheat' : 'shame',
+      time: p.challenge.endAt.toISOString(), // TODO: change to release_at,
+      avatar: {
+        animal: p.user.avatar_animal,
+        color: p.user.avatar_color,
+        background: p.user.avatar_bg,
+      },
+    }));
 
     return result;
   }

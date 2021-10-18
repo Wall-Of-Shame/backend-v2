@@ -5,7 +5,10 @@ import { EVENTS } from './app.gateway';
 import { PrismaService } from './prisma.service';
 import { UsersService } from './users/users.service';
 import { ChallengesService } from './challenges/challenges.service';
-import { ChallengeData } from './challenges/entities/challenge.entity';
+import {
+  ChallengeData,
+  ShamedList,
+} from './challenges/entities/challenge.entity';
 
 @Injectable()
 export class AppEmitter {
@@ -18,9 +21,13 @@ export class AppEmitter {
   async releaseResultsNotify(
     server: Server,
     challengeId: string,
-    event: string,
   ): Promise<void> {
-    await this.emitNewGlobalWall(server, event);
+    await this.emitNewGlobalWall(server, EVENTS.globalLeaderboard);
+    await this.emitNewShamedListEntries(
+      server,
+      challengeId,
+      EVENTS.shameListUpdate,
+    );
   }
 
   async challengeUpdateNotify(
@@ -47,7 +54,18 @@ export class AppEmitter {
     event: string,
   ): Promise<void> {
     const results = await this.usersService.getGlobalLeaderboard();
-    server.emit(EVENTS.globalLeaderboard, results);
+    server.emit(event, results);
+    console.log('SOCKET: -<GLOBAL>- || EVENT: ' + event);
+  }
+
+  private async emitNewShamedListEntries(
+    server: Server,
+    challengeId: string,
+    event: string,
+  ): Promise<void> {
+    const results: ShamedList[] =
+      await this.challengesService.getShamedListForChallenge(challengeId);
+    server.emit(event, results);
     console.log('SOCKET: -<GLOBAL>- || EVENT: ' + event);
   }
 }

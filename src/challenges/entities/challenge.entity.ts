@@ -1,4 +1,4 @@
-import { UserList } from '../../users/entities/user.entity';
+import { Avatar, UserList } from '../../users/entities/user.entity';
 
 export type ChallengeType = 'LAST_TO_COMPLETE' | 'NOT_COMPLETED';
 
@@ -34,6 +34,15 @@ export class ChallengeList {
 export class PublicChallengeList {
   featured: ChallengeData[];
   others: ChallengeData[];
+}
+
+export class ShamedList {
+  id: `${string}:${string}`; // userId + challengeId
+  name: string;
+  title: string;
+  type: 'shame' | 'cheat';
+  time: string;
+  avatar: Avatar;
 }
 
 // Internal type. They do not match to any route specifically, but rather used to construct them.
