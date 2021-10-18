@@ -793,8 +793,7 @@ export class ChallengesService {
   async getShameList(): Promise<ShamedList[]> {
     const raw = await this.prisma.participant.findMany({
       where: {
-        completed_at: null,
-        has_been_vetoed: true,
+        OR: [{ completed_at: null }, { has_been_vetoed: true }],
       },
       include: {
         challenge: true,
@@ -803,9 +802,6 @@ export class ChallengesService {
       orderBy: {
         challenge: {
           endAt: 'desc',
-        },
-        user: {
-          name: 'asc',
         },
       },
       take: 100,
@@ -824,6 +820,7 @@ export class ChallengesService {
       },
     }));
 
+    console.log(result);
     return result;
   }
 
@@ -831,8 +828,7 @@ export class ChallengesService {
     const raw = await this.prisma.participant.findMany({
       where: {
         challengeId,
-        completed_at: null,
-        has_been_vetoed: true,
+        OR: [{ completed_at: null }, { has_been_vetoed: true }],
       },
       include: {
         challenge: true,
