@@ -333,7 +333,7 @@ export class AppGateway implements OnGatewayConnection {
   @UseGuards(JwtWsAuthGuard)
   @SubscribeMessage(EVENTS.shameListGet)
   async getShameList(@ConnectedSocket() socket: Socket) {
-    const event = EVENTS.challengeReleaseResults;
+    const event = EVENTS.shameListGet;
 
     this.wsLogger.log(socket, event, 'RECEIVE');
     const result: ShamedList[] = await this.challengesService.getShameList();
