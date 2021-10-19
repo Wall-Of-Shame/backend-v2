@@ -125,7 +125,7 @@ async function main() {
         endAt: t[2],
         type: ChallengeType.NOT_COMPLETED,
         ownerId: users[0].userId,
-        has_released_result: true,
+        result_released_at: new Date(),
         invite_type: ChallengeInviteType.PRIVATE,
         participants: {
           createMany: {
@@ -150,6 +150,7 @@ async function main() {
           data: {
             pers1_id: u1.userId,
             pers2_id: u2.userId,
+            accepted_at: new Date(),
           },
         });
       }

@@ -133,7 +133,7 @@ export class ChallengesService {
       endAt: c.endAt.toISOString(),
       type: c.type,
       inviteType: c.invite_type,
-      hasReleasedResult: c.has_released_result,
+      hasReleasedResult: !!c.result_released_at,
       owner: {
         userId: owner.userId,
         username: owner.username!,
@@ -673,7 +673,7 @@ export class ChallengesService {
           challengeId,
         },
         data: {
-          has_released_result: true,
+          result_released_at: new Date(),
         },
       }),
       this.prisma.participant.updateMany({
