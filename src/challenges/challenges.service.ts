@@ -488,28 +488,140 @@ export class ChallengesService {
     }
   }
 
-  async completeChallenge(userId: string, challengeId: string): Promise<void> {
+  async completeChallenge(
+    userId: string,
+    challengeId: string,
+    opType: 'http' | 'ws' = 'http',
+  ): Promise<void> {
+    const participant = await this.prisma.participant.findUnique({
+      where: {
+        challengeId_userId: { userId, challengeId },
+      },
+      include: {
+        challenge: true,
+      },
+    });
+
+    if (!participant) {
+      if (opType === 'http') {
+        throw new HttpException(
+          'Challenge and/or user not found',
+          HttpStatus.NOT_FOUND,
+        );
+      } else if (opType === 'ws') {
+        throw new WsException('Challenge and/or user not found');
+      }
+    }
+
+    if (participant.completed_at || participant.has_been_vetoed) {
+      if (opType === 'http') {
+        throw new HttpException(
+          'User has already completed the challenge or has been vetoed',
+          HttpStatus.BAD_REQUEST,
+        );
+      } else if (opType === 'ws') {
+        throw new WsException(
+          'User has already completed the challenge or has been vetoed',
+        );
+      }
+    }
+
+    if (this.isChallengeOver(participant.challenge.endAt)) {
+      if (opType === 'http') {
+        throw new HttpException(
+          'Challenge is already over',
+          HttpStatus.BAD_REQUEST,
+        );
+      } else if (opType === 'ws') {
+        throw new WsException('Challenge is already over');
+      }
+    }
+
     try {
-      await this.prisma.participant.update({
-        where: {
-          challengeId_userId: {
-            challengeId,
+      const reward = 5;
+
+      await this.prisma.$transaction([
+        this.prisma.participant.update({
+          where: {
+            challengeId_userId: {
+              challengeId,
+              userId,
+            },
+          },
+          data: {
+            completed_at: new Date(),
+          },
+        }),
+        this.prisma.user.update({
+          where: {
             userId,
           },
-        },
-        data: {
-          completed_at: new Date(),
-        },
-      });
+          data: {
+            points: { increment: reward },
+          },
+        }),
+      ]);
     } catch (error) {
-      throw new HttpException(
-        'Challenge and/or user not found',
-        HttpStatus.NOT_FOUND,
-      );
+      if (opType === 'http') {
+        // allow for 500 here, unknown error
+        throw new HttpException(
+          'Operation failed',
+          HttpStatus.INTERNAL_SERVER_ERROR,
+        );
+      } else if (opType === 'ws') {
+        throw new WsException('Operation failed');
+      }
     }
   }
 
-  async rejectChallenge(userId: string, challengeId: string): Promise<void> {
+  async rejectChallenge(
+    userId: string,
+    challengeId: string,
+    opType: 'http' | 'ws' = 'http',
+  ): Promise<void> {
+    const participant = await this.prisma.participant.findUnique({
+      where: {
+        challengeId_userId: { challengeId, userId },
+      },
+      include: {
+        challenge: true,
+      },
+    });
+    if (!participant) {
+      if (opType === 'http') {
+        throw new HttpException(
+          'Challenge and/or user not found',
+          HttpStatus.NOT_FOUND,
+        );
+      } else if (opType === 'ws') {
+        throw new WsException('Challenge and/or user not found');
+      }
+    }
+
+    if (participant.completed_at || participant.has_been_vetoed) {
+      if (opType === 'http') {
+        throw new HttpException(
+          'User has already completed the challenge or has been vetoed',
+          HttpStatus.BAD_REQUEST,
+        );
+      } else if (opType === 'ws') {
+        throw new WsException(
+          'User has already completed the challenge or has been vetoed',
+        );
+      }
+    }
+
+    if (this.hasChallengeStarted(participant.challenge.startAt)) {
+      if (opType === 'http') {
+        throw new HttpException(
+          'Challenge has already started',
+          HttpStatus.BAD_REQUEST,
+        );
+      } else if (opType === 'ws') {
+        throw new WsException('Challenge has already started');
+      }
+    }
+
     try {
       await this.prisma.participant.delete({
         where: {
@@ -520,7 +632,15 @@ export class ChallengesService {
         },
       });
     } catch (error) {
-      // do nothing
+      if (opType === 'http') {
+        // allow for 500 here, unknown error
+        throw new HttpException(
+          'Operation failed',
+          HttpStatus.INTERNAL_SERVER_ERROR,
+        );
+      } else if (opType === 'ws') {
+        throw new WsException('Operation failed');
+      }
     }
   }
 

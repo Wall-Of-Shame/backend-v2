@@ -44,12 +44,19 @@ model User {
   avatar_animal         AvatarAnimal?
   avatar_color          AvatarColor?
   avatar_bg             String?
-  owner_of              Challenge[]
-  participating_in      Participant[]
-  contacts_pers1        Contact[]     @relation("contacts_pers1")
-  contacts_pers2        Contact[]     @relation("contacts_pers2")
-  votes_received        Vote[]        @relation("victim_user") // dont query with this
-  votes_given           Vote[]        @relation("accuser_user") // dont query with this
+
+  owner_of         Challenge[]
+  participating_in Participant[]
+
+  contacts_pers1 Contact[] @relation("contacts_pers1")
+  contacts_pers2 Contact[] @relation("contacts_pers2")
+
+  votes_received Vote[] @relation("victim_user") // dont query with this
+  votes_given    Vote[] @relation("accuser_user") // dont query with this
+
+  points               Int @default(0)
+  powerup_grief_count  Int @default(0)
+  powerup_protec_count Int @default(0)
 }
 
 model Challenge {
@@ -65,7 +72,6 @@ model Challenge {
   participants       Participant[]
   result_released_at DateTime?
   votes              Vote[] // unwise to query through here, too messy
-
 }
 
 model Participant {

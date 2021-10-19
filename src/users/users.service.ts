@@ -128,6 +128,11 @@ export class UsersService {
         deadlineReminder: user.cfg_deadline_reminder,
         invitations: user.cfg_invites_notif,
       },
+      store: {
+        points: user.points,
+        protecCount: user.powerup_protec_count,
+        griefCount: user.powerup_grief_count,
+      },
       failedChallengeCount: user.failedCount,
       completedChallengeCount: user.completedCount,
       vetoedChallengeCount: user.vetoedCount,
