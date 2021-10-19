@@ -795,6 +795,7 @@ export class ChallengesService {
       where: {
         challenge: {
           endAt: { lte: new Date() },
+          result_released_at: { not: null },
         },
         OR: [{ completed_at: null }, { has_been_vetoed: true }],
       },
@@ -815,7 +816,7 @@ export class ChallengesService {
       name: p.user.name,
       title: p.challenge.title,
       type: p.has_been_vetoed ? 'cheat' : 'shame',
-      time: p.challenge.endAt.toISOString(), // TODO: change to release_at,
+      time: p.challenge.result_released_at!.toISOString(), // safe to do so due to the query
       avatar: {
         animal: p.user.avatar_animal,
         color: p.user.avatar_color,
@@ -833,6 +834,7 @@ export class ChallengesService {
         challenge: {
           challengeId,
           endAt: { lte: new Date() },
+          result_released_at: { not: null },
         },
         OR: [{ completed_at: null }, { has_been_vetoed: true }],
       },
@@ -852,7 +854,7 @@ export class ChallengesService {
       name: p.user.name,
       title: p.challenge.title,
       type: p.has_been_vetoed ? 'cheat' : 'shame',
-      time: p.challenge.endAt.toISOString(), // TODO: change to release_at,
+      time: p.challenge.result_released_at!.toISOString(), // safe to do this due to the query
       avatar: {
         animal: p.user.avatar_animal,
         color: p.user.avatar_color,
