@@ -793,6 +793,9 @@ export class ChallengesService {
   async getShameList(): Promise<ShamedList[]> {
     const raw = await this.prisma.participant.findMany({
       where: {
+        challenge: {
+          endAt: { lte: new Date() },
+        },
         OR: [{ completed_at: null }, { has_been_vetoed: true }],
       },
       include: {
@@ -827,7 +830,10 @@ export class ChallengesService {
   async getShamedListForChallenge(challengeId: string): Promise<ShamedList[]> {
     const raw = await this.prisma.participant.findMany({
       where: {
-        challengeId,
+        challenge: {
+          challengeId,
+          endAt: { lte: new Date() },
+        },
         OR: [{ completed_at: null }, { has_been_vetoed: true }],
       },
       include: {

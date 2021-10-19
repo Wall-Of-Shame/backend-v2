@@ -338,7 +338,7 @@ export class AppGateway implements OnGatewayConnection {
     this.wsLogger.log(socket, event, 'RECEIVE');
     const result: ShamedList[] = await this.challengesService.getShameList();
 
-    socket.emit(event, result);
     this.wsLogger.log(socket, event, 'EMIT');
+    return result;
   }
 }
