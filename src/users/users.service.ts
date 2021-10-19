@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { Prisma, User } from '@prisma/client';
 import { PrismaService } from '../prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -139,17 +139,28 @@ export class UsersService {
     email?: string | undefined;
   }): Promise<UserList> {
     const u = await this.findOne(args);
+
+    if (
+      !u.username ||
+      !u.name ||
+      !u.avatar.animal ||
+      !u.avatar.background ||
+      !u.avatar.color
+    ) {
+      throw new HttpException('Not found', HttpStatus.NOT_FOUND);
+    }
+
     const user: UserList = {
       userId: u.userId,
-      username: u.username!,
-      name: u.name!,
-      failedChallengeCount: u.failedChallengeCount!,
-      completedChallengeCount: u.completedChallengeCount!,
-      vetoedChallengeCount: u.vetoedChallengeCount!,
+      username: u.username,
+      name: u.name,
+      failedChallengeCount: u.failedChallengeCount,
+      completedChallengeCount: u.completedChallengeCount,
+      vetoedChallengeCount: u.vetoedChallengeCount,
       avatar: {
-        animal: u.avatar.animal!,
-        color: u.avatar.color!,
-        background: u.avatar.background!,
+        animal: u.avatar.animal,
+        color: u.avatar.color,
+        background: u.avatar.background,
       },
     };
     return user;

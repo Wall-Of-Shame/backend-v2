@@ -7,7 +7,6 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { JwtWsAuthGuard } from '../auth/jwt-auth-ws.guard';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { UserId } from '../auth/user.decorator';
 import { UsersService } from './users.service';
@@ -39,8 +38,8 @@ export class UsersController {
     }
   }
 
-  @Get('id')
-  @UseGuards(JwtWsAuthGuard)
+  @Get(':id')
+  @UseGuards(JwtAuthGuard)
   show(@Param('id') targetUserId: string) {
     if (!targetUserId) {
       throw new HttpException('Not found', HttpStatus.NOT_FOUND);
