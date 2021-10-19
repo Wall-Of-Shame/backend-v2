@@ -17,6 +17,11 @@ export class UserData {
     deadlineReminder: boolean;
     invitations: boolean;
   };
+  store: {
+    points: number;
+    griefCount: number;
+    protecCount: number;
+  };
 }
 
 export class UserList {
