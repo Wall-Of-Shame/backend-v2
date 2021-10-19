@@ -12,53 +12,55 @@ export class FriendRequestsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(userId: string, createRequest: CreateRequestDto): Promise<void> {
-    const { userIds: reqIds } = createRequest;
-    let users: { userId: string }[] = undefined;
+    const { userId: reqId } = createRequest;
 
-    const user = await this.prisma.user.findUnique({
-      where: { userId },
-    });
-
-    if (!user) {
-      throw new HttpException('Not found', HttpStatus.UNAUTHORIZED);
-    }
-    if (reqIds.includes(userId)) {
+    if (reqId === userId) {
       throw new HttpException('Cannot befriend self', HttpStatus.BAD_REQUEST);
     }
 
-    users = await this.prisma.user.findMany({
-      where: {
-        // cannot befriend yourself
-        userId: { in: reqIds },
-      },
+    const user = await this.prisma.user.findUnique({
+      where: { userId },
       select: {
         userId: true,
       },
     });
-    if (users.length === 0) {
-      throw new HttpException('No valid userIds given', HttpStatus.BAD_REQUEST);
+    if (!user) {
+      throw new HttpException('Not found', HttpStatus.UNAUTHORIZED);
     }
 
-    const exisingContacts = await this.prisma.contact.findMany({
+    const friend = await this.prisma.user.findUnique({
+      where: { userId: reqId },
+      select: { userId: true },
+    });
+    if (!friend) {
+      throw new HttpException('Not found', HttpStatus.NOT_FOUND);
+    }
+
+    const existingContact = await this.prisma.contact.findUnique({
       where: {
-        pers1_id: userId,
-        pers2_id: { in: reqIds },
+        pers1_id_pers2_id: {
+          pers1_id: userId,
+          pers2_id: reqId,
+        },
       },
       select: {
         pers2_id: true,
       },
     });
 
-    const toCreateIds = users
-      .filter((u) => !exisingContacts.find((contact) => contact.pers2_id))
-      .map((u) => u.userId);
+    if (existingContact) {
+      throw new HttpException(
+        'Friend request already exists',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
 
     try {
-      await this.prisma.contact.createMany({
-        data: toCreateIds.map((pers2_id) => ({
+      await this.prisma.contact.create({
+        data: {
           pers1_id: userId,
-          pers2_id,
-        })),
+          pers2_id: reqId,
+        },
       });
     } catch (error) {
       console.log(error);

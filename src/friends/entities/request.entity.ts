@@ -1,5 +1,5 @@
 export class CreateRequestDto {
-  userIds: string[];
+  userId: string;
 }
 
 export class AcceptRequestDto {

@@ -45,6 +45,6 @@ export class UsersController {
     if (!targetUserId) {
       throw new HttpException('Not found', HttpStatus.NOT_FOUND);
     }
-    return this.usersService.findOne({ userId: targetUserId });
+    return this.usersService.showUser({ userId: targetUserId });
   }
 }

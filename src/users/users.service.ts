@@ -134,6 +134,27 @@ export class UsersService {
     };
   }
 
+  async showUser(args: {
+    userId?: string | undefined;
+    email?: string | undefined;
+  }): Promise<UserList> {
+    const u = await this.findOne(args);
+    const user: UserList = {
+      userId: u.userId,
+      username: u.username!,
+      name: u.name!,
+      failedChallengeCount: u.failedChallengeCount!,
+      completedChallengeCount: u.completedChallengeCount!,
+      vetoedChallengeCount: u.vetoedChallengeCount!,
+      avatar: {
+        animal: u.avatar.animal!,
+        color: u.avatar.color!,
+        background: u.avatar.background!,
+      },
+    };
+    return user;
+  }
+
   // Updates the token only.
   // This should be used during authorisation to get the latest registration token for notifs.
   async updateToken(
