@@ -19,7 +19,7 @@ import { WsException } from '@nestjs/websockets';
 import { SubmitVoteDto } from '../votes/dto/submit-vote.dto';
 import { VoteData } from '../votes/votes.entities';
 import { Challenge, Participant, User } from '@prisma/client';
-import { features } from 'process';
+import { CHALLENGE_COMPLETION_AWARD } from 'src/store/store.entity';
 
 @Injectable()
 export class ChallengesService {
@@ -39,7 +39,7 @@ export class ChallengesService {
   }
 
   // checks if the challenge is over
-  private isChallengeOver(end: Date): boolean {
+  private hasChallengeEnded(end: Date): boolean {
     return !isBefore(new Date(), end);
   }
 
@@ -259,7 +259,7 @@ export class ChallengesService {
       const c: ChallengeData = this.formatChallenge(participantOf.challenge);
 
       if (
-        this.isChallengeOver(participantOf.challenge.endAt) &&
+        this.hasChallengeEnded(participantOf.challenge.endAt) &&
         this.hasUserAccepted(participantOf.joined_at)
       ) {
         // history
@@ -526,19 +526,22 @@ export class ChallengesService {
       }
     }
 
-    if (this.isChallengeOver(participant.challenge.endAt)) {
+    if (
+      !this.hasChallengeStarted(participant.challenge.startAt) ||
+      this.hasChallengeEnded(participant.challenge.endAt)
+    ) {
       if (opType === 'http') {
         throw new HttpException(
-          'Challenge is already over',
+          'Invalid challenge state',
           HttpStatus.BAD_REQUEST,
         );
       } else if (opType === 'ws') {
-        throw new WsException('Challenge is already over');
+        throw new WsException('Invalid challenge state');
       }
     }
 
     try {
-      const reward = 5;
+      const reward = CHALLENGE_COMPLETION_AWARD;
 
       await this.prisma.$transaction([
         this.prisma.participant.update({
@@ -611,14 +614,17 @@ export class ChallengesService {
       }
     }
 
-    if (this.hasChallengeStarted(participant.challenge.startAt)) {
+    if (
+      this.hasChallengeStarted(participant.challenge.startAt) ||
+      this.hasChallengeEnded(participant.challenge.endAt)
+    ) {
       if (opType === 'http') {
         throw new HttpException(
-          'Challenge has already started',
+          'Invalid challenge state',
           HttpStatus.BAD_REQUEST,
         );
       } else if (opType === 'ws') {
-        throw new WsException('Challenge has already started');
+        throw new WsException('Invalid challenge state');
       }
     }
 
@@ -757,7 +763,7 @@ export class ChallengesService {
         throw new HttpException('Not found', HttpStatus.NOT_FOUND);
       }
     }
-    if (!this.isChallengeOver(challenge.endAt)) {
+    if (!this.hasChallengeEnded(challenge.endAt)) {
       if (opType === 'ws') {
         throw new WsException('Bad request');
       } else if (opType === 'http') {
@@ -830,7 +836,7 @@ export class ChallengesService {
       where: { challengeId },
       select: { endAt: true },
     });
-    if (!challenge || !this.isChallengeOver(challenge.endAt)) {
+    if (!challenge || !this.hasChallengeEnded(challenge.endAt)) {
       throw new HttpException('Bad request', HttpStatus.BAD_REQUEST);
     }
 
