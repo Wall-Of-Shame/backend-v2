@@ -9,9 +9,9 @@ export class PurchasePost {
 }
 
 // For internal reference only
-export const CHALLENGE_COMPLETION_AWARD = 5;
+export const CHALLENGE_COMPLETION_AWARD = 100;
 
 export const POWER_UP_PRICE = {
-  GRIEF: 50,
-  PROTEC: 50,
+  GRIEF: 500,
+  PROTEC: 750,
 };

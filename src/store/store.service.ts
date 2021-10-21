@@ -40,8 +40,8 @@ export class StoreService {
         await this.prisma.user.update({
           where: { userId },
           data: {
-            points: { decrement: price },
-            powerup_grief_count: { increment: count * price },
+            points: { decrement: count * price },
+            powerup_grief_count: { increment: count },
           },
         });
         return;
@@ -49,7 +49,7 @@ export class StoreService {
         await this.prisma.user.update({
           where: { userId },
           data: {
-            points: { decrement: price },
+            points: { decrement: count * price },
             powerup_protec_count: { increment: count },
           },
         });
