@@ -929,11 +929,11 @@ export class ChallengesService {
         challenge: true,
         user: true,
       },
-      orderBy: {
-        challenge: {
-          endAt: 'desc',
-        },
-      },
+      orderBy: [
+        { challenge: { endAt: 'desc' } },
+        { user: { name: 'asc' } },
+        { challengeId: 'asc' },
+      ],
       take: 100,
     });
 
@@ -967,11 +967,11 @@ export class ChallengesService {
         challenge: true,
         user: true,
       },
-      orderBy: {
-        user: {
-          name: 'asc',
-        },
-      },
+      orderBy: [
+        { challenge: { endAt: 'desc' } },
+        { user: { name: 'asc' } },
+        { challengeId: 'asc' },
+      ],
     });
 
     const result: ShamedList[] = raw.map((p) => ({
