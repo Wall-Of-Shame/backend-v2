@@ -950,7 +950,6 @@ export class ChallengesService {
       },
     }));
 
-    console.log(result);
     return result;
   }
 

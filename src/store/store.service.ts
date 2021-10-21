@@ -34,6 +34,7 @@ export class StoreService {
             powerup_grief_count: { increment: 1 },
           },
         });
+        return;
       case PowerUp.PROTEC:
         await this.prisma.user.update({
           where: { userId },
@@ -42,6 +43,7 @@ export class StoreService {
             powerup_protec_count: { increment: 1 },
           },
         });
+        return;
       default:
         throw new HttpException('Unknown power up', HttpStatus.BAD_REQUEST);
     }
