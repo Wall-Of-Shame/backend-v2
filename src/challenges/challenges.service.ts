@@ -614,6 +614,17 @@ export class ChallengesService {
       }
     }
 
+    if (participant.griefed_by_userId) {
+      if (opType === 'http') {
+        throw new HttpException(
+          'User cannot reject challenge due to powerup',
+          HttpStatus.BAD_REQUEST,
+        );
+      } else if (opType === 'ws') {
+        throw new WsException('User cannot reject challenge due to powerup');
+      }
+    }
+
     if (
       this.hasChallengeStarted(participant.challenge.startAt) ||
       this.hasChallengeEnded(participant.challenge.endAt)
@@ -988,5 +999,127 @@ export class ChallengesService {
     }));
 
     return result;
+  }
+
+  async useGrief(
+    userId: string,
+    challengeId: string,
+    targetUserId: string,
+  ): Promise<void> {
+    if (targetUserId === userId) {
+      throw new HttpException('Cannot grief self', HttpStatus.BAD_REQUEST);
+    }
+
+    const userParticipant:
+      | (Participant & {
+          user: User;
+        })
+      | undefined = await this.prisma.participant
+      .findMany({
+        where: {
+          userId,
+          challengeId,
+          joined_at: { not: null },
+        },
+        include: {
+          user: true,
+        },
+      })
+      .then((res) => res[0]);
+    if (!userParticipant || !userParticipant.user) {
+      throw new HttpException(
+        'No such participant has joined the challenge',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    if (userParticipant.user.powerup_grief_count < 1) {
+      throw new HttpException('No available grief', HttpStatus.BAD_REQUEST);
+    }
+
+    const targetUser = await this.prisma.user
+      .findMany({
+        where: {
+          userId: targetUserId,
+          // ensure not initiated users cannot be added as participants
+          username: { not: null },
+          name: { not: null },
+          avatar_animal: { not: null },
+          avatar_color: { not: null },
+          avatar_bg: { not: null },
+        },
+      })
+      .then((res) => res[0]);
+    if (!targetUser) {
+      throw new HttpException('No such user', HttpStatus.BAD_REQUEST);
+    }
+
+    const challenge = await this.prisma.challenge.findUnique({
+      where: {
+        challengeId,
+      },
+      include: {
+        participants: {
+          where: { userId: targetUserId },
+        },
+      },
+    });
+    if (!challenge) {
+      throw new HttpException('No such challenge', HttpStatus.BAD_REQUEST);
+    } else if (
+      this.hasChallengeStarted(challenge.startAt) ||
+      this.hasChallengeEnded(challenge.endAt)
+    ) {
+      throw new HttpException(
+        'Invalid challenge state',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const existingParticipant: Participant | undefined =
+      challenge.participants.find((p) => p.userId === targetUserId);
+    if (existingParticipant && existingParticipant.joined_at) {
+      throw new HttpException(
+        'Participant already joined',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    if (existingParticipant) {
+      await this.prisma.$transaction([
+        this.prisma.user.update({
+          where: { userId },
+          data: {
+            powerup_grief_count: { decrement: 1 },
+          },
+        }),
+        this.prisma.participant.update({
+          where: {
+            challengeId_userId: { challengeId, userId: targetUserId },
+          },
+          data: {
+            joined_at: new Date(),
+            griefed_by_userId: userId,
+          },
+        }),
+      ]);
+    } else {
+      await this.prisma.$transaction([
+        this.prisma.user.update({
+          where: { userId },
+          data: {
+            powerup_grief_count: { decrement: 1 },
+          },
+        }),
+        this.prisma.participant.create({
+          data: {
+            challengeId,
+            userId: targetUserId,
+            joined_at: new Date(),
+            griefed_by_userId: userId,
+          },
+        }),
+      ]);
+    }
   }
 }

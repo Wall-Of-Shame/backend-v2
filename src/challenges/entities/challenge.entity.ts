@@ -1,3 +1,4 @@
+import { PowerUp } from 'src/store/store.entity';
 import { Avatar, UserList } from '../../users/entities/user.entity';
 
 export type ChallengeType = 'LAST_TO_COMPLETE' | 'NOT_COMPLETED';
@@ -43,6 +44,11 @@ export class ShamedList {
   type: 'shame' | 'cheat';
   time: string;
   avatar: Avatar;
+}
+
+export class usePowerupDto {
+  type: PowerUp;
+  targetUserId?: string | undefined;
 }
 
 // Internal type. They do not match to any route specifically, but rather used to construct them.

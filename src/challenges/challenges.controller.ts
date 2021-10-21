@@ -11,12 +11,14 @@ import {
   HttpException,
   HttpStatus,
 } from '@nestjs/common';
+import { PowerUp } from 'src/store/store.entity';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { UserId } from '../auth/user.decorator';
 import { ChallengesService } from './challenges.service';
 import { CreateChallengeDto } from './dto/create-challenge.dto';
 import { UpdateChallengeDto } from './dto/update-challenge.dto';
 import { VetoedParticipantsDto } from './dto/vetoed-participants.dto';
+import { usePowerupDto } from './entities/challenge.entity';
 
 export type FindAllOpType = 'self' | 'explore';
 
@@ -67,6 +69,32 @@ export class ChallengesController {
       challengeId,
       updateChallengeDto,
     );
+  }
+
+  @Post(':id/powerups')
+  @UseGuards(JwtAuthGuard)
+  async usePowerup(
+    @UserId() userId: string,
+    @Param('id') challengeId: string,
+    @Body() usePowerup: usePowerupDto,
+  ) {
+    const { type } = usePowerup;
+    switch (type) {
+      case PowerUp.GRIEF:
+        const { type, targetUserId } = usePowerup;
+        if (!type || !targetUserId) {
+          throw new HttpException('Bad request', HttpStatus.BAD_REQUEST);
+        }
+        await this.challengesService.useGrief(
+          userId,
+          challengeId,
+          targetUserId,
+        );
+        return;
+      case PowerUp.PROTEC:
+        return;
+      default:
+    }
   }
 
   @Post(':id/accept')
