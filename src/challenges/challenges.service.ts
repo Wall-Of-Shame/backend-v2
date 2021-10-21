@@ -66,100 +66,57 @@ export class ChallengesService {
     const pending: UserMini[] = [];
     const notCompleted: UserMini[] = [];
     const completed: UserMini[] = [];
+    const $protected: UserMini[] = [];
 
     // for this challenge, organise it into accepted and pending users
     for (const participant of participants) {
       const { userId, username, name, avatar_animal, avatar_bg, avatar_color } =
         participant.user;
+
+      const u: UserMini = {
+        userId: userId,
+        username: username!,
+        name: name!,
+        hasBeenVetoed: participant.has_been_vetoed,
+        completedAt: participant.completed_at?.toISOString(),
+        evidenceLink: participant.evidence_link ?? undefined,
+        avatar: {
+          animal: avatar_animal!,
+          background: avatar_bg!,
+          color: avatar_color!,
+        },
+        isProtected: !!participant.applied_protec,
+        isGriefed: !!participant.griefed_by_userId,
+        griefedBy: participant.griefed_by_userId
+          ? {
+              userId: participant.griefed_by.userId,
+              username: participant.griefed_by.username,
+              name: participant.griefed_by.name,
+              avatar: {
+                animal: participant.griefed_by.avatar_animal,
+                background: participant.griefed_by.avatar_bg,
+                color: participant.griefed_by.avatar_color,
+              },
+            }
+          : undefined,
+      };
+
       if (participant.joined_at === null) {
         /* eslint-disable @typescript-eslint/no-non-null-assertion,no-inner-declarations */
         // allow for !. in this block => assume that username, name, avatars are all present
         // see  `POST challenges/`, `PATCH challenges/:challengeId`, `POST challenges/accept`,
         // these are the endpoints that insert rows into participants, and they check for these fields to exist
-        pending.push({
-          userId: userId,
-          username: username!,
-          name: name!,
-          hasBeenVetoed: participant.has_been_vetoed,
-          completedAt: participant.completed_at?.toISOString(),
-          evidenceLink: participant.evidence_link ?? undefined,
-          avatar: {
-            animal: avatar_animal!,
-            background: avatar_bg!,
-            color: avatar_color!,
-          },
-          isGriefed: !!participant.griefed_by_userId,
-          griefedBy: participant.griefed_by_userId
-            ? {
-                userId: participant.griefed_by.userId,
-                username: participant.griefed_by.username,
-                name: participant.griefed_by.name,
-                avatar: {
-                  animal: participant.griefed_by.avatar_animal,
-                  background: participant.griefed_by.avatar_bg,
-                  color: participant.griefed_by.avatar_color,
-                },
-              }
-            : undefined,
-        });
+        pending.push(u);
       } else {
         // user has joined
-        if (participant.completed_at) {
+        if (participant.applied_protec) {
+          $protected.push(u);
+        } else if (participant.completed_at) {
           // completed
-          completed.push({
-            userId: userId,
-            username: username!,
-            name: name!,
-            avatar: {
-              animal: avatar_animal!,
-              background: avatar_bg!,
-              color: avatar_color!,
-            },
-            completedAt: participant.completed_at?.toISOString(),
-            evidenceLink: participant.evidence_link ?? undefined,
-            hasBeenVetoed: participant.has_been_vetoed,
-            isGriefed: !!participant.griefed_by_userId,
-            griefedBy: participant.griefed_by_userId
-              ? {
-                  userId: participant.griefed_by.userId,
-                  username: participant.griefed_by.username,
-                  name: participant.griefed_by.name,
-                  avatar: {
-                    animal: participant.griefed_by.avatar_animal,
-                    background: participant.griefed_by.avatar_bg,
-                    color: participant.griefed_by.avatar_color,
-                  },
-                }
-              : undefined,
-          });
+          completed.push(u);
         } else {
           // not completed
-          notCompleted.push({
-            userId: userId,
-            username: username!,
-            name: name!,
-            completedAt: undefined,
-            evidenceLink: undefined,
-            hasBeenVetoed: participant.has_been_vetoed,
-            avatar: {
-              animal: avatar_animal!,
-              background: avatar_bg!,
-              color: avatar_color!,
-            },
-            isGriefed: !!participant.griefed_by_userId,
-            griefedBy: participant.griefed_by_userId
-              ? {
-                  userId: participant.griefed_by.userId,
-                  username: participant.griefed_by.username,
-                  name: participant.griefed_by.name,
-                  avatar: {
-                    animal: participant.griefed_by.avatar_animal,
-                    background: participant.griefed_by.avatar_bg,
-                    color: participant.griefed_by.avatar_color,
-                  },
-                }
-              : undefined,
-          });
+          notCompleted.push(u);
         }
       }
     }
@@ -191,6 +148,7 @@ export class ChallengesService {
         accepted: {
           completed,
           notCompleted,
+          protected: $protected,
         },
         pending,
       },
@@ -466,6 +424,8 @@ export class ChallengesService {
       const removedParticipants = challenge.participants.filter(
         (e) =>
           e.userId !== challenge.ownerId &&
+          !e.applied_protec &&
+          !e.griefed_by_userId &&
           !participants.find((p) => p.userId === e.userId),
       );
 
@@ -654,7 +614,8 @@ export class ChallengesService {
       }
     }
 
-    if (participant.griefed_by_userId) {
+    // TODO: for now, disallow users from leaving once they use protec
+    if (participant.griefed_by_userId || participant.applied_protec) {
       if (opType === 'http') {
         throw new HttpException(
           'User cannot reject challenge due to powerup',
@@ -837,6 +798,7 @@ export class ChallengesService {
             avatar_bg: { not: null },
             avatar_color: { not: null },
           },
+          applied_protec: null, // veto only those without protec
         },
         select: {
           userId: true,
@@ -871,16 +833,28 @@ export class ChallengesService {
     voteData: SubmitVoteDto,
   ): Promise<void> {
     const { victimId } = voteData;
-    const doTheyExist = await this.prisma.participant
-      .count({
+    const userParticipant = await this.prisma.participant
+      .findMany({
+        where: { challengeId, userId: accuserId, joined_at: { not: null } },
+      })
+      .then((res) => res[0]);
+    if (!userParticipant) {
+      throw new HttpException('Participant not found', HttpStatus.NOT_FOUND);
+    }
+
+    const victimParticipant = await this.prisma.participant
+      .findMany({
         where: {
           challengeId,
-          OR: [{ userId: accuserId }, { userId: victimId }],
+          userId: victimId,
+          joined_at: { not: null },
         },
       })
-      .then((count) => count === 2);
-    if (!doTheyExist) {
-      throw new HttpException('Not found', HttpStatus.NOT_FOUND);
+      .then((res) => res[0]);
+    if (!victimParticipant) {
+      throw new HttpException('Victim not found', HttpStatus.NOT_FOUND);
+    } else if (victimParticipant.applied_protec) {
+      throw new HttpException('Victim applied protec', HttpStatus.BAD_REQUEST);
     }
 
     const challenge = await this.prisma.challenge.findFirst({
@@ -959,6 +933,7 @@ export class ChallengesService {
           username: p.user.username!,
           // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
           name: p.user.name!,
+          hasProtec: !!p.applied_protec,
           evidenceLink: p.evidence_link ?? undefined,
         },
         accusers: countMap.get(p.userId) ?? [],
@@ -974,6 +949,7 @@ export class ChallengesService {
           endAt: { lte: new Date() },
           result_released_at: { not: null },
         },
+        applied_protec: null,
         OR: [{ completed_at: null }, { has_been_vetoed: true }],
       },
       include: {
@@ -1012,6 +988,7 @@ export class ChallengesService {
           endAt: { lte: new Date() },
           result_released_at: { not: null },
         },
+        applied_protec: null,
         OR: [{ completed_at: null }, { has_been_vetoed: true }],
       },
       include: {
