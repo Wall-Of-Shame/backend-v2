@@ -22,6 +22,7 @@ export class ChallengeData {
     accepted: {
       completed: UserMini[];
       notCompleted: UserMini[];
+      protected: UserMini[];
     };
     pending: UserMini[];
   };
@@ -62,4 +63,5 @@ export type UserMini = UserMiniBase & {
   hasBeenVetoed: boolean;
   isGriefed: boolean;
   griefedBy?: UserMiniBase | undefined;
+  isProtected: boolean;
 };
