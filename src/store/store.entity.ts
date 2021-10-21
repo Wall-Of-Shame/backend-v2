@@ -5,6 +5,7 @@ export const enum PowerUp {
 
 export class PurchasePost {
   powerup: PowerUp;
+  count: number;
 }
 
 // For internal reference only

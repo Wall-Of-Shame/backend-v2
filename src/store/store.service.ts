@@ -8,10 +8,20 @@ export class StoreService {
 
   private readonly priceList = POWER_UP_PRICE;
 
-  async buyPowerup(userId: string, powerUp: PowerUp): Promise<void> {
+  async buyPowerup(
+    userId: string,
+    powerUp: PowerUp,
+    count: number,
+  ): Promise<void> {
     const price: number = this.priceList[powerUp];
     if (!price) {
       throw new HttpException('Unknown power up', HttpStatus.BAD_REQUEST);
+    }
+    if (count < 1) {
+      throw new HttpException(
+        'Count has to be at least 1',
+        HttpStatus.BAD_REQUEST,
+      );
     }
 
     const user = await this.prisma.user.findUnique({
@@ -21,7 +31,7 @@ export class StoreService {
       throw new HttpException('User not found', HttpStatus.UNAUTHORIZED);
     }
 
-    if (user.points < price) {
+    if (user.points < count * price) {
       throw new HttpException('Insufficent funds', HttpStatus.BAD_REQUEST);
     }
 
@@ -31,7 +41,7 @@ export class StoreService {
           where: { userId },
           data: {
             points: { decrement: price },
-            powerup_grief_count: { increment: 1 },
+            powerup_grief_count: { increment: count * price },
           },
         });
         return;
@@ -40,7 +50,7 @@ export class StoreService {
           where: { userId },
           data: {
             points: { decrement: price },
-            powerup_protec_count: { increment: 1 },
+            powerup_protec_count: { increment: count },
           },
         });
         return;
