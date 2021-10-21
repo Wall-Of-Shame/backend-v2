@@ -55,6 +55,7 @@ export class ChallengesService {
     c: Challenge & {
       participants: (Participant & {
         user: User;
+        griefed_by: User;
       })[];
       owner: User;
     },
@@ -87,6 +88,19 @@ export class ChallengesService {
             background: avatar_bg!,
             color: avatar_color!,
           },
+          isGriefed: !!participant.griefed_by_userId,
+          griefedBy: participant.griefed_by_userId
+            ? {
+                userId: participant.griefed_by.userId,
+                username: participant.griefed_by.username,
+                name: participant.griefed_by.name,
+                avatar: {
+                  animal: participant.griefed_by.avatar_animal,
+                  background: participant.griefed_by.avatar_bg,
+                  color: participant.griefed_by.avatar_color,
+                },
+              }
+            : undefined,
         });
       } else {
         // user has joined
@@ -104,6 +118,19 @@ export class ChallengesService {
             completedAt: participant.completed_at?.toISOString(),
             evidenceLink: participant.evidence_link ?? undefined,
             hasBeenVetoed: participant.has_been_vetoed,
+            isGriefed: !!participant.griefed_by_userId,
+            griefedBy: participant.griefed_by_userId
+              ? {
+                  userId: participant.griefed_by.userId,
+                  username: participant.griefed_by.username,
+                  name: participant.griefed_by.name,
+                  avatar: {
+                    animal: participant.griefed_by.avatar_animal,
+                    background: participant.griefed_by.avatar_bg,
+                    color: participant.griefed_by.avatar_color,
+                  },
+                }
+              : undefined,
           });
         } else {
           // not completed
@@ -119,6 +146,19 @@ export class ChallengesService {
               background: avatar_bg!,
               color: avatar_color!,
             },
+            isGriefed: !!participant.griefed_by_userId,
+            griefedBy: participant.griefed_by_userId
+              ? {
+                  userId: participant.griefed_by.userId,
+                  username: participant.griefed_by.username,
+                  name: participant.griefed_by.name,
+                  avatar: {
+                    animal: participant.griefed_by.avatar_animal,
+                    background: participant.griefed_by.avatar_bg,
+                    color: participant.griefed_by.avatar_color,
+                  },
+                }
+              : undefined,
           });
         }
       }
@@ -238,6 +278,7 @@ export class ChallengesService {
             participants: {
               include: {
                 user: true,
+                griefed_by: true,
               },
             },
           },
@@ -307,6 +348,7 @@ export class ChallengesService {
         participants: {
           include: {
             user: true,
+            griefed_by: true,
           },
         },
         owner: true,
@@ -345,6 +387,7 @@ export class ChallengesService {
         participants: {
           include: {
             user: true,
+            griefed_by: true,
           },
         },
       },

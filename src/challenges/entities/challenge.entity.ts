@@ -15,7 +15,7 @@ export class ChallengeData {
   type: ChallengeType;
   inviteType: ChallengeInviteType;
   hasReleasedResult: boolean;
-  owner: Omit<UserMini, 'hasBeenVetoed'>;
+  owner: UserMiniBase;
   participants: {
     accepted: {
       completed: UserMini[];
@@ -52,11 +52,12 @@ export class usePowerupDto {
 }
 
 // Internal type. They do not match to any route specifically, but rather used to construct them.
-export type UserMini = Pick<
-  UserList,
-  'userId' | 'username' | 'name' | 'avatar'
-> & {
+type UserMiniBase = Pick<UserList, 'userId' | 'username' | 'name' | 'avatar'>;
+
+export type UserMini = UserMiniBase & {
   completedAt?: string;
   evidenceLink?: string;
   hasBeenVetoed: boolean;
+  isGriefed: boolean;
+  griefedBy?: UserMiniBase | undefined;
 };
