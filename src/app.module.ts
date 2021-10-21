@@ -12,6 +12,7 @@ import { VotesModule } from './votes/votes.module';
 import { FeedbackModule } from './feedback/feedback.module';
 import { MailModule } from './mail/mail.module';
 import { FriendsModule } from './friends/friends.module';
+import { StoreModule } from './store/store.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { FriendsModule } from './friends/friends.module';
     FeedbackModule,
     MailModule,
     FriendsModule,
+    StoreModule,
   ],
   providers: [PrismaService, AppEmitter, AppGateway],
 })
