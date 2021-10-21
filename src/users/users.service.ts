@@ -13,6 +13,7 @@ interface UserWithMetaData extends User {
   completedCount: number;
   vetoedCount: number;
   totalFailedCount: number;
+  protecCount: number;
 }
 
 // Internal interface used to handle reading from Prisma view
@@ -162,6 +163,7 @@ export class UsersService {
       failedChallengeCount: u.failedChallengeCount,
       completedChallengeCount: u.completedChallengeCount,
       vetoedChallengeCount: u.vetoedChallengeCount,
+      protecCount: u.protecCount,
       avatar: {
         animal: u.avatar.animal,
         color: u.avatar.color,
@@ -252,6 +254,7 @@ export class UsersService {
         failedChallengeCount: user.failedCount,
         completedChallengeCount: user.completedCount,
         vetoedChallengeCount: user.vetoedCount,
+        protecCount: user.protecCount,
       }));
     } catch (error) {
       // TODO - prisma error
@@ -288,6 +291,7 @@ export class UsersService {
         failedChallengeCount: user.failedCount,
         completedChallengeCount: user.completedCount,
         vetoedChallengeCount: user.vetoedCount,
+        protecCount: user.protecCount,
       }));
     } catch (error) {
       // TODO - prisma error
@@ -333,6 +337,7 @@ export class UsersService {
         failedChallengeCount: user.failedCount,
         completedChallengeCount: user.completedCount,
         vetoedChallengeCount: user.vetoedCount,
+        protecCount: user.protecCount,
       }));
     } catch (error) {
       // TODO - prisma error

@@ -12,6 +12,7 @@ export class UserData {
   completedChallengeCount?: number;
   failedChallengeCount?: number;
   vetoedChallengeCount?: number;
+  protecCount?: number;
   avatar: Partial<Avatar>;
   settings: {
     deadlineReminder: boolean;
@@ -31,6 +32,7 @@ export class UserList {
   completedChallengeCount: number;
   failedChallengeCount: number;
   vetoedChallengeCount: number;
+  protecCount: number;
   avatar: Avatar;
 }
 

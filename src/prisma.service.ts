@@ -9,6 +9,7 @@ interface UserWithMetaData extends User {
   completedCount: number;
   vetoedCount: number;
   totalFailedCount: number;
+  protecCount: number;
 }
 
 // Internal interface used to handle reading from Prisma view
@@ -64,6 +65,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
       failedChallengeCount: user.failedCount,
       completedChallengeCount: user.completedCount,
       vetoedChallengeCount: user.vetoedCount,
+      protecCount: user.protecCount,
     }));
   }
 
