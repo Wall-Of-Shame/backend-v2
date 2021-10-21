@@ -54,9 +54,10 @@ model User {
   votes_received Vote[] @relation("victim_user") // dont query with this
   votes_given    Vote[] @relation("accuser_user") // dont query with this
 
-  points               Int @default(0)
-  powerup_grief_count  Int @default(0)
-  powerup_protec_count Int @default(0)
+  points               Int           @default(0)
+  powerup_grief_count  Int           @default(0)
+  powerup_protec_count Int           @default(0)
+  applied_grief_on     Participant[] @relation("griefed_by") // list of participants this user has applied grief on
 }
 
 model Challenge {
@@ -84,8 +85,14 @@ model Participant {
   completed_at    DateTime?
   evidence_link   String?
   has_been_vetoed Boolean   @default(false)
-  votes_received  Vote[]    @relation("victim_participant")
-  votes_given     Vote[]    @relation("accuser_participant")
+
+  applied_protec DateTime?
+
+  griefed_by_userId String?
+  griefed_by        User?   @relation("griefed_by", fields: [griefed_by_userId], references: [userId])
+
+  votes_received Vote[] @relation("victim_participant")
+  votes_given    Vote[] @relation("accuser_participant")
 
   @@id([challengeId, userId])
 }
