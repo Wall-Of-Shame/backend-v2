@@ -12,7 +12,7 @@ export class StoreController {
   @HttpCode(200)
   @UseGuards(JwtAuthGuard)
   async buyPowerup(@UserId() userId: string, @Body() data: PurchasePost) {
-    const { powerup } = data;
-    await this.storeService.buyPowerup(userId, powerup);
+    const { powerup, count } = data;
+    await this.storeService.buyPowerup(userId, powerup, count);
   }
 }
