@@ -72,7 +72,11 @@ model Challenge {
   owner              User                @relation(fields: [ownerId], references: [userId])
   participants       Participant[]
   result_released_at DateTime?
-  votes              Vote[] // unwise to query through here, too messy
+
+  is_featured Boolean @default(false)
+  image_url   String?
+
+  votes Vote[] // unwise to query through here, too messy
 }
 
 model Participant {

@@ -8,6 +8,8 @@ export type ChallengeInviteType = 'PRIVATE' | 'PUBLIC';
 export class ChallengeData {
   challengeId: string;
   title: string;
+  isFeatured: boolean;
+  imageURL?: string | undefined;
   description?: string;
   startAt: string | null;
   endAt: string;

@@ -169,6 +169,8 @@ export class ChallengesService {
       challengeId: c.challengeId,
       title: c.title,
       description: c.description ?? undefined,
+      isFeatured: c.is_featured,
+      imageURL: c.is_featured ? c.image_url : undefined,
       startAt: c.startAt ? c.startAt.toISOString() : null,
       endAt: c.endAt.toISOString(),
       type: c.type,
@@ -353,21 +355,16 @@ export class ChallengesService {
         },
         owner: true,
       },
+      orderBy: [{ participants: { _count: 'desc' } }, { title: 'asc' }],
     });
 
     const publicChallenges = rawPublicChallenges.map(this.formatChallenge);
-    const publicChallengesSorted = orderBy(
-      publicChallenges,
-      [(c) => c.participantCount, (c) => c.title],
-      ['desc', 'asc'],
-    );
 
     const featured: ChallengeData[] = [];
     const others: ChallengeData[] = [];
 
-    for (let i = 0; i < publicChallengesSorted.length; i++) {
-      const c = publicChallengesSorted[i];
-      if (i < 5) {
+    for (const c of publicChallenges) {
+      if (c.isFeatured && c.imageURL) {
         featured.push(c);
       } else {
         others.push(c);
