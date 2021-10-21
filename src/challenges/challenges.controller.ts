@@ -92,6 +92,7 @@ export class ChallengesController {
         );
         return;
       case PowerUp.PROTEC:
+        await this.challengesService.useProtec(userId, challengeId);
         return;
       default:
     }

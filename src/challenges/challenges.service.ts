@@ -1162,4 +1162,67 @@ export class ChallengesService {
       ]);
     }
   }
+
+  async useProtec(userId: string, challengeId: string): Promise<void> {
+    const userParticipant:
+      | (Participant & {
+          user: User;
+        })
+      | undefined = await this.prisma.participant
+      .findMany({
+        where: {
+          userId,
+          challengeId,
+          joined_at: { not: null },
+        },
+        include: {
+          user: true,
+        },
+      })
+      .then((res) => res[0]);
+    if (!userParticipant || !userParticipant.user) {
+      throw new HttpException(
+        'No such participant has joined the challenge',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    if (userParticipant.user.powerup_protec_count < 1) {
+      throw new HttpException('No available protec', HttpStatus.BAD_REQUEST);
+    } else if (userParticipant.applied_protec) {
+      throw new HttpException(
+        'User has already applied protec',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const challenge = await this.prisma.challenge.findUnique({
+      where: { challengeId },
+    });
+    if (!challenge) {
+      throw new HttpException('No such challenge', HttpStatus.BAD_REQUEST);
+    } else if (this.hasChallengeEnded(challenge.endAt)) {
+      throw new HttpException(
+        'Invalid challenge state',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    await this.prisma.$transaction([
+      this.prisma.user.update({
+        where: { userId },
+        data: {
+          powerup_protec_count: { decrement: 1 },
+        },
+      }),
+      this.prisma.participant.update({
+        where: {
+          challengeId_userId: { challengeId, userId },
+        },
+        data: {
+          applied_protec: new Date(),
+        },
+      }),
+    ]);
+  }
 }
