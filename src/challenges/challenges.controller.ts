@@ -20,7 +20,7 @@ import { UpdateChallengeDto } from './dto/update-challenge.dto';
 import { VetoedParticipantsDto } from './dto/vetoed-participants.dto';
 import { usePowerupDto } from './entities/challenge.entity';
 
-export type FindAllOpType = 'self' | 'explore';
+export type FindAllOpType = 'self' | 'explore' | 'search';
 
 @Controller('challenges')
 export class ChallengesController {
@@ -40,6 +40,7 @@ export class ChallengesController {
   findAll(
     @UserId() userId: string,
     @Query('operation') operation: FindAllOpType,
+    @Query('query') query: string,
   ) {
     let op: FindAllOpType = operation ?? 'self';
 
@@ -47,6 +48,8 @@ export class ChallengesController {
       return this.challengesService.getUserChallenges(userId);
     } else if (op === 'explore') {
       return this.challengesService.getPublicChallenges(userId);
+    } else if (op === 'search') {
+      return this.challengesService.searchChallenges(query);
     } else {
       throw new HttpException('Invalid operation type', HttpStatus.BAD_REQUEST);
     }

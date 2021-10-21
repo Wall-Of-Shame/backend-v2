@@ -1202,4 +1202,29 @@ export class ChallengesService {
       }),
     ]);
   }
+
+  async searchChallenges(query: string): Promise<ChallengeData[]> {
+    if (!query || query === '') {
+      return [];
+    }
+
+    const raw = await this.prisma.challenge.findMany({
+      where: {
+        title: { contains: query, mode: 'insensitive' },
+        invite_type: ChallengeInviteType.PUBLIC,
+      },
+      include: {
+        owner: true,
+        participants: {
+          include: {
+            user: true,
+            griefed_by: true,
+          },
+        },
+      },
+    });
+
+    const result: ChallengeData[] = raw.map(this.formatChallenge);
+    return result;
+  }
 }
