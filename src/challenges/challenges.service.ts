@@ -424,6 +424,8 @@ export class ChallengesService {
       const removedParticipants = challenge.participants.filter(
         (e) =>
           e.userId !== challenge.ownerId &&
+          !e.applied_protec &&
+          !e.griefed_by_userId &&
           !participants.find((p) => p.userId === e.userId),
       );
 
@@ -612,7 +614,8 @@ export class ChallengesService {
       }
     }
 
-    if (participant.griefed_by_userId) {
+    // TODO: for now, disallow users from leaving once they use protec
+    if (participant.griefed_by_userId || participant.applied_protec) {
       if (opType === 'http') {
         throw new HttpException(
           'User cannot reject challenge due to powerup',
@@ -795,6 +798,7 @@ export class ChallengesService {
             avatar_bg: { not: null },
             avatar_color: { not: null },
           },
+          applied_protec: null, // veto only those without protec
         },
         select: {
           userId: true,
@@ -829,16 +833,28 @@ export class ChallengesService {
     voteData: SubmitVoteDto,
   ): Promise<void> {
     const { victimId } = voteData;
-    const doTheyExist = await this.prisma.participant
-      .count({
+    const userParticipant = await this.prisma.participant
+      .findMany({
+        where: { challengeId, userId: accuserId, joined_at: { not: null } },
+      })
+      .then((res) => res[0]);
+    if (!userParticipant) {
+      throw new HttpException('Participant not found', HttpStatus.NOT_FOUND);
+    }
+
+    const victimParticipant = await this.prisma.participant
+      .findMany({
         where: {
           challengeId,
-          OR: [{ userId: accuserId }, { userId: victimId }],
+          userId: victimId,
+          joined_at: { not: null },
         },
       })
-      .then((count) => count === 2);
-    if (!doTheyExist) {
-      throw new HttpException('Not found', HttpStatus.NOT_FOUND);
+      .then((res) => res[0]);
+    if (!victimParticipant) {
+      throw new HttpException('Victim not found', HttpStatus.NOT_FOUND);
+    } else if (victimParticipant.applied_protec) {
+      throw new HttpException('Victim applied protec', HttpStatus.BAD_REQUEST);
     }
 
     const challenge = await this.prisma.challenge.findFirst({
@@ -917,6 +933,7 @@ export class ChallengesService {
           username: p.user.username!,
           // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
           name: p.user.name!,
+          hasProtec: !!p.applied_protec,
           evidenceLink: p.evidence_link ?? undefined,
         },
         accusers: countMap.get(p.userId) ?? [],
@@ -932,6 +949,7 @@ export class ChallengesService {
           endAt: { lte: new Date() },
           result_released_at: { not: null },
         },
+        applied_protec: null,
         OR: [{ completed_at: null }, { has_been_vetoed: true }],
       },
       include: {
@@ -970,6 +988,7 @@ export class ChallengesService {
           endAt: { lte: new Date() },
           result_released_at: { not: null },
         },
+        applied_protec: null,
         OR: [{ completed_at: null }, { has_been_vetoed: true }],
       },
       include: {
