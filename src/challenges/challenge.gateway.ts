@@ -359,14 +359,17 @@ export class ChallengeGateway implements OnGatewayConnection {
         c.challengeId,
         new CronJob(c.endAt, () => {
           this.wsLogger.log(`Auto releasing results for ${c.challengeId}`);
-          this.prisma.challenge.update({
-            where: { challengeId: c.challengeId },
-            data: {
-              result_released_at: c.endAt,
-            },
-          });
-          this.wsLogger.log(`Notifying everyone on ${c.challengeId}`);
-          this.releaseResultsNotify(this.server, c.challengeId);
+          this.prisma.challenge
+            .update({
+              where: { challengeId: c.challengeId },
+              data: {
+                result_released_at: c.endAt,
+              },
+            })
+            .then((_) => {
+              this.wsLogger.log(`Notifying everyone on ${c.challengeId}`);
+              this.releaseResultsNotify(this.server, c.challengeId);
+            });
         }),
       );
     });
