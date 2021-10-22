@@ -47,6 +47,11 @@ export class ShamedList {
   type: 'shame' | 'cheat';
   time: string;
   avatar: Avatar;
+  effect: {
+    tomato: number;
+    egg: number;
+    poop: number;
+  };
 }
 
 export class usePowerupDto {

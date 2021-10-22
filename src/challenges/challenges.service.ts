@@ -975,6 +975,11 @@ export class ChallengesService {
         color: p.user.avatar_color,
         background: p.user.avatar_bg,
       },
+      effect: {
+        tomato: p.effect_tomato,
+        egg: p.effect_egg,
+        poop: p.effect_poop,
+      },
     }));
 
     return result;
@@ -1012,6 +1017,11 @@ export class ChallengesService {
         animal: p.user.avatar_animal,
         color: p.user.avatar_color,
         background: p.user.avatar_bg,
+      },
+      effect: {
+        tomato: p.effect_tomato,
+        egg: p.effect_egg,
+        poop: p.effect_poop,
       },
     }));
 
