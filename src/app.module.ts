@@ -5,9 +5,6 @@ import { AuthModule } from './auth/auth.module';
 import { ChallengesModule } from './challenges/challenges.module';
 import { ProofsModule } from './proofs/proofs.module';
 import { ConfigModule } from '@nestjs/config';
-import { AppGateway } from './app.gateway';
-import { AppEmitter } from './app.emitter';
-import { PrismaService } from './prisma.service';
 import { VotesModule } from './votes/votes.module';
 import { FeedbackModule } from './feedback/feedback.module';
 import { MailModule } from './mail/mail.module';
@@ -35,6 +32,5 @@ import { CronModule } from './cron/cron.module';
     StoreModule,
     ShameModule,
   ],
-  providers: [PrismaService, AppEmitter, AppGateway],
 })
 export class AppModule {}

@@ -1,11 +1,5 @@
 import { ChallengeInviteType, Prisma } from '.prisma/client';
-import {
-  Global,
-  HttpException,
-  HttpStatus,
-  Injectable,
-  OnApplicationBootstrap,
-} from '@nestjs/common';
+import { Global, HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { isBefore, parseJSON } from 'date-fns';
 import { orderBy } from 'lodash';
 import { PrismaService } from '../prisma.service';
@@ -26,20 +20,11 @@ import { SubmitVoteDto } from '../votes/dto/submit-vote.dto';
 import { VoteData } from '../votes/votes.entities';
 import { Challenge, Participant, User } from '@prisma/client';
 import { CHALLENGE_COMPLETION_AWARD } from 'src/store/store.entity';
-import { CronJob } from 'cron';
-import { CronService } from 'src/cron/cron.service';
 
 @Global()
 @Injectable()
-export class ChallengesService implements OnApplicationBootstrap {
-  constructor(
-    private prisma: PrismaService,
-    private readonly cronService: CronService,
-  ) {}
-
-  async onApplicationBootstrap() {
-    await this.initJobs();
-  }
+export class ChallengesService {
+  constructor(private prisma: PrismaService) {}
 
   // checks if challenge start is before its end
   private isStartBeforeEnd(start: Date | null, end: Date): boolean {
@@ -1252,23 +1237,5 @@ export class ChallengesService implements OnApplicationBootstrap {
 
     const result: ChallengeData[] = raw.map(this.formatChallenge);
     return result;
-  }
-
-  async initJobs(): Promise<void> {
-    const challenges = await this.prisma.challenge.findMany({
-      where: { endAt: { gte: new Date() } },
-    });
-
-    challenges.forEach((c) => {
-      this.cronService.addCronJob(
-        c.challengeId,
-        new CronJob(c.endAt, () => {
-          const res = this.prisma.$queryRaw`SELECT NOW()`;
-          console.log(res);
-        }),
-      );
-    });
-
-    this.cronService.logStats();
   }
 }
