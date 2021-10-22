@@ -95,9 +95,9 @@ model Participant {
   griefed_by_userId String?
   griefed_by        User?   @relation("griefed_by", fields: [griefed_by_userId], references: [userId])
 
-  effect_tomato BigInt @default(0)
-  effect_poop   BigInt @default(0)
-  effect_egg    BigInt @default(0)
+  effect_tomato Int @default(0)
+  effect_poop   Int @default(0)
+  effect_egg    Int @default(0)
 
   votes_received Vote[] @relation("victim_participant")
   votes_given    Vote[] @relation("accuser_participant")
