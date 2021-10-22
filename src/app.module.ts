@@ -13,6 +13,7 @@ import { FeedbackModule } from './feedback/feedback.module';
 import { MailModule } from './mail/mail.module';
 import { FriendsModule } from './friends/friends.module';
 import { StoreModule } from './store/store.module';
+import { ShameModule } from './shame/shame.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { StoreModule } from './store/store.module';
     MailModule,
     FriendsModule,
     StoreModule,
+    ShameModule,
   ],
   providers: [PrismaService, AppEmitter, AppGateway],
 })
