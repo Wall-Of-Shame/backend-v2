@@ -8,7 +8,7 @@ import {
   WsException,
 } from '@nestjs/websockets';
 import { UsersService } from '../users/users.service';
-import { Logger, UseGuards } from '@nestjs/common';
+import { Logger, OnApplicationBootstrap, UseGuards } from '@nestjs/common';
 import { JwtWsAuthGuard } from '../auth/jwt-auth-ws.guard';
 import { Server, Socket } from 'socket.io';
 import { UserList } from '../users/entities/user.entity';
@@ -20,6 +20,7 @@ import { ChallengeData, ShamedList } from './entities/challenge.entity';
 import { PrismaService } from 'src/prisma.service';
 import { CronService } from 'src/cron/cron.service';
 import { CronJob } from 'cron';
+import { Challenge } from '.prisma/client';
 
 export const EVENTS = {
   connection: 'connection',
@@ -36,7 +37,9 @@ export const EVENTS = {
 };
 
 @WebSocketGateway({ transports: ['websocket', 'polling'] })
-export class ChallengeGateway implements OnGatewayConnection {
+export class ChallengeGateway
+  implements OnGatewayConnection, OnApplicationBootstrap
+{
   constructor(
     private prisma: PrismaService,
     private readonly usersService: UsersService,
@@ -53,6 +56,20 @@ export class ChallengeGateway implements OnGatewayConnection {
     const event = EVENTS.connection;
     socket.emit(event, { clientId: socket.id }); // success message
     this.wsLogger.log(socket, event, 'EMIT');
+  }
+
+  async onApplicationBootstrap() {
+    await this.initJobs();
+  }
+
+  async initJobs(): Promise<void> {
+    const challenges = await this.prisma.challenge.findMany({
+      where: { endAt: { gte: new Date() } },
+    });
+
+    challenges.forEach(this.addCronJob);
+
+    this.cronService.logStats();
   }
 
   /**
@@ -345,36 +362,24 @@ export class ChallengeGateway implements OnGatewayConnection {
     return result;
   }
 
-  async onApplicationBootstrap() {
-    await this.initJobs();
-  }
-
-  async initJobs(): Promise<void> {
-    const challenges = await this.prisma.challenge.findMany({
-      where: { endAt: { gte: new Date() } },
-    });
-
-    challenges.forEach((c) => {
-      this.cronService.addCronJob(
-        c.challengeId,
-        new CronJob(c.endAt, () => {
-          this.wsLogger.log(`Auto releasing results for ${c.challengeId}`);
-          this.prisma.challenge
-            .update({
-              where: { challengeId: c.challengeId },
-              data: {
-                result_released_at: c.endAt,
-              },
-            })
-            .then((_) => {
-              this.wsLogger.log(`Notifying everyone on ${c.challengeId}`);
-              this.releaseResultsNotify(this.server, c.challengeId);
-            });
-        }),
-      );
-    });
-
-    this.cronService.logStats();
+  private addCronJob(c: Challenge): void {
+    this.cronService.addCronJob(
+      c.challengeId,
+      new CronJob(c.endAt, () => {
+        this.wsLogger.log(`Auto releasing results for ${c.challengeId}`);
+        this.prisma.challenge
+          .update({
+            where: { challengeId: c.challengeId },
+            data: {
+              result_released_at: c.endAt,
+            },
+          })
+          .then((_) => {
+            this.wsLogger.log(`Notifying everyone on ${c.challengeId}`);
+            this.releaseResultsNotify(this.server, c.challengeId);
+          });
+      }),
+    );
   }
 
   private async releaseResultsNotify(
