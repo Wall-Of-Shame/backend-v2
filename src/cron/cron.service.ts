@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { SchedulerRegistry } from '@nestjs/schedule';
 import { CronJob, CronTime } from 'cron';
 import { Exception } from 'handlebars';
+import { ChallengesService } from 'src/challenges/challenges.service';
 
 @Injectable()
 export class CronService {

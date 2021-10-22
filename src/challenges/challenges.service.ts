@@ -180,7 +180,7 @@ export class ChallengesService {
   async create(
     userId: string,
     createChallengeDto: CreateChallengeDto,
-  ): Promise<void> {
+  ): Promise<Challenge> {
     const { participants } = createChallengeDto;
     const qUserIds: { userId: string; joined_at?: Date }[] =
       await this.prisma.user.findMany({
@@ -208,7 +208,7 @@ export class ChallengesService {
       type,
       inviteType = ChallengeInviteType.PRIVATE,
     } = createChallengeDto;
-    await this.prisma.challenge.create({
+    const result = await this.prisma.challenge.create({
       data: {
         title,
         description,
@@ -225,6 +225,8 @@ export class ChallengesService {
         },
       },
     });
+
+    return result;
   }
 
   async getUserChallenges(userId: string): Promise<ChallengeList> {
@@ -361,7 +363,7 @@ export class ChallengesService {
     userId: string,
     challengeId: string,
     updateChallengeDto: UpdateChallengeDto,
-  ): Promise<void> {
+  ): Promise<Challenge> {
     const challenge = await this.prisma.challenge.findFirst({
       where: {
         challengeId,
@@ -440,7 +442,8 @@ export class ChallengesService {
       };
     }
 
-    await this.prisma.challenge.update(args);
+    const result: Challenge = await this.prisma.challenge.update(args);
+    return result;
   }
 
   async acceptChallenge(userId: string, challengeId: string): Promise<void> {

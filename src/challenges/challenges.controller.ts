@@ -10,10 +10,13 @@ import {
   Query,
   HttpException,
   HttpStatus,
+  Injectable,
 } from '@nestjs/common';
+import { Challenge } from '@prisma/client';
 import { PowerUp } from 'src/store/store.entity';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { UserId } from '../auth/user.decorator';
+import { ChallengeGateway } from './challenge.gateway';
 import { ChallengesService } from './challenges.service';
 import { CreateChallengeDto } from './dto/create-challenge.dto';
 import { UpdateChallengeDto } from './dto/update-challenge.dto';
@@ -24,15 +27,23 @@ export type FindAllOpType = 'self' | 'explore' | 'search';
 
 @Controller('challenges')
 export class ChallengesController {
-  constructor(private readonly challengesService: ChallengesService) {}
+  constructor(
+    private readonly challengesService: ChallengesService,
+    private readonly gateway: ChallengeGateway,
+  ) {}
 
   @Post()
   @UseGuards(JwtAuthGuard)
-  create(
+  async create(
     @UserId() userId: string,
     @Body() createChallengeDto: CreateChallengeDto,
   ) {
-    return this.challengesService.create(userId, createChallengeDto);
+    const challenge: Challenge = await this.challengesService.create(
+      userId,
+      createChallengeDto,
+    );
+    this.gateway.addCronJob(challenge);
+    return { challengeId: challenge.challengeId };
   }
 
   @Get()
@@ -62,16 +73,18 @@ export class ChallengesController {
 
   @Patch(':id')
   @UseGuards(JwtAuthGuard)
-  update(
+  async update(
     @UserId() userId: string,
     @Param('id') challengeId: string,
     @Body() updateChallengeDto: UpdateChallengeDto,
   ) {
-    return this.challengesService.update(
+    const challenge: Challenge = await this.challengesService.update(
       userId,
       challengeId,
       updateChallengeDto,
     );
+    this.gateway.editCronJob(challenge);
+    return;
   }
 
   @Post(':id/powerups')
