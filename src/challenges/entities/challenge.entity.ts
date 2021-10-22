@@ -54,7 +54,7 @@ export class ShamedList {
   };
 }
 
-export class usePowerupDto {
+export class ApplyPowerupDto {
   type: PowerUp;
   targetUserId?: string | undefined;
 }

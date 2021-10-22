@@ -18,7 +18,7 @@ import { ChallengesService } from './challenges.service';
 import { CreateChallengeDto } from './dto/create-challenge.dto';
 import { UpdateChallengeDto } from './dto/update-challenge.dto';
 import { VetoedParticipantsDto } from './dto/vetoed-participants.dto';
-import { usePowerupDto } from './entities/challenge.entity';
+import { ApplyPowerupDto } from './entities/challenge.entity';
 
 export type FindAllOpType = 'self' | 'explore' | 'search';
 
@@ -76,15 +76,15 @@ export class ChallengesController {
 
   @Post(':id/powerups')
   @UseGuards(JwtAuthGuard)
-  async usePowerup(
+  async applyPowerup(
     @UserId() userId: string,
     @Param('id') challengeId: string,
-    @Body() usePowerup: usePowerupDto,
+    @Body() applyPowerup: ApplyPowerupDto,
   ) {
-    const { type } = usePowerup;
+    const { type } = applyPowerup;
     switch (type) {
       case PowerUp.GRIEF:
-        const { type, targetUserId } = usePowerup;
+        const { type, targetUserId } = applyPowerup;
         if (!type || !targetUserId) {
           throw new HttpException('Bad request', HttpStatus.BAD_REQUEST);
         }
