@@ -8,20 +8,12 @@ import {
   WsException,
 } from '@nestjs/websockets';
 import { UsersService } from '../users/users.service';
-import {
-  Injectable,
-  Logger,
-  OnApplicationBootstrap,
-  OnModuleInit,
-  UseGuards,
-} from '@nestjs/common';
+import { Logger, OnApplicationBootstrap, UseGuards } from '@nestjs/common';
 import { JwtWsAuthGuard } from '../auth/jwt-auth-ws.guard';
 import { Server, Socket } from 'socket.io';
 import { UserList } from '../users/entities/user.entity';
 import { ChallengesService } from './challenges.service';
 import { UserWsId } from '../auth/user.decorator';
-import { VetoedParticipantsDto } from './dto/vetoed-participants.dto';
-import { WsLogger } from '../middleware/ws-logger.middleware';
 import { ChallengeData, ShamedList } from './entities/challenge.entity';
 import { PrismaService } from 'src/prisma.service';
 import { CronService } from 'src/cron/cron.service';
@@ -322,25 +314,11 @@ export class ChallengeGateway
   }
 
   /**
+   * Deprecate due to change in user flow.
    * Handles the challengeReleaseResults event.
    * => Informs all sockets of new leaderboard
    * => Informs all sockets of new live update
-   *
-   * Expecting:
-   *
-   * ```
-   * {
-   *  challengeId: string,
-   *  data: {
-   *    vetoedParticipants: string[]
-   *  }
-   * }
-   * ```
-   *
-   * Returns:
-   *  EMITS:
-   *    ON challengeReleaseResults :: TYPE UserList[]
-   */
+
   @UseGuards(JwtWsAuthGuard)
   @SubscribeMessage(EVENTS.challengeReleaseResults)
   async releaseChallengeResults(
@@ -361,6 +339,7 @@ export class ChallengeGateway
 
     await this.releaseResultsNotify(this.server, challengeId);
   }
+    */
 
   /**
    * Handles the shameListGet event.

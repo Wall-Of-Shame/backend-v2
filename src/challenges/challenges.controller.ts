@@ -135,7 +135,8 @@ export class ChallengesController {
     return this.challengesService.completeChallenge(userId, challengeId);
   }
 
-  // To be deprecated, use the socket event instead
+  /*
+  // Deprecated due to change in workflow
   @Post(':id/vetoResults')
   @UseGuards(JwtAuthGuard)
   @HttpCode(200)
@@ -146,4 +147,5 @@ export class ChallengesController {
   ) {
     return this.challengesService.releaseResults(userId, challengeId, results);
   }
+  */
 }
