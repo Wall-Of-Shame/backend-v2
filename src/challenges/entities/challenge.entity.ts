@@ -19,6 +19,7 @@ export class ChallengeData {
   hasReleasedResult: boolean;
   owner: UserMiniBase;
   participants: {
+    griefList: string[];
     accepted: {
       completed: UserMini[];
       notCompleted: UserMini[];

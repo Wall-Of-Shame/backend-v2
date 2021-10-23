@@ -68,6 +68,8 @@ export class ChallengesService {
     const completed: UserMini[] = [];
     const $protected: UserMini[] = [];
 
+    const griefList: string[] = [];
+
     // for this challenge, organise it into accepted and pending users
     for (const participant of participants) {
       const { userId, username, name, avatar_animal, avatar_bg, avatar_color } =
@@ -100,6 +102,10 @@ export class ChallengesService {
             }
           : undefined,
       };
+
+      if (participant.griefed_by_userId) {
+        griefList.push(participant.userId);
+      }
 
       if (participant.joined_at === null) {
         /* eslint-disable @typescript-eslint/no-non-null-assertion,no-inner-declarations */
@@ -145,6 +151,7 @@ export class ChallengesService {
       },
       participantCount: accepted.length,
       participants: {
+        griefList,
         accepted: {
           completed,
           notCompleted,
