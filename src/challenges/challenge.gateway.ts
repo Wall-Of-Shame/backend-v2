@@ -376,7 +376,7 @@ export class ChallengeGateway
       return;
     }
 
-    this.server.emit(EVENTS.shameListUpdate, cheater);
+    this.server.emit(EVENTS.shameListUpdate, [cheater]);
     this.wsLogger.log(
       `Emitting cheater ${victimId} through ${EVENTS.shameListUpdate}`,
     );
