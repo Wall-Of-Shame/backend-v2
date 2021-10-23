@@ -120,6 +120,14 @@ export class UsersService {
       where: { userId: user.userId },
       include: {
         contacts_pers1: true,
+        contacts_pers2: {
+          where: {
+            accepted_at: null,
+          },
+          select: {
+            pers2_id: true,
+          },
+        },
       },
     });
 
@@ -132,6 +140,8 @@ export class UsersService {
         pendingAccept.push(c.pers2_id);
       }
     });
+
+    const received = userFriends.contacts_pers2.length;
 
     return {
       userId: user.userId,
@@ -153,6 +163,7 @@ export class UsersService {
         griefCount: user.powerup_grief_count,
       },
       friends: {
+        received,
         accepted,
         pendingAccept,
       },

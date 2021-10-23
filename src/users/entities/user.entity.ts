@@ -24,6 +24,7 @@ export class UserData {
     protecCount: number;
   };
   friends: {
+    received: number;
     pendingAccept: string[];
     accepted: string[];
   };
