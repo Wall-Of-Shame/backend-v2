@@ -367,6 +367,21 @@ export class ChallengeGateway
     return result;
   }
 
+  async notifyCheater(victimId: string, challengeId: string) {
+    const cheater = await this.challengesService.getShame(
+      victimId,
+      challengeId,
+    );
+    if (!cheater) {
+      return;
+    }
+
+    this.server.emit(EVENTS.shameListUpdate, cheater);
+    this.wsLogger.log(
+      `Emitting cheater ${victimId} through ${EVENTS.shameListUpdate}`,
+    );
+  }
+
   private async releaseResultsNotify(
     server: Server,
     challengeId: string,

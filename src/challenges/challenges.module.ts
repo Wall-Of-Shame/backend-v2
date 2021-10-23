@@ -15,6 +15,6 @@ import { ChallengeGateway } from './challenge.gateway';
     UsersService,
     ChallengeGateway,
   ],
-  exports: [ChallengesService],
+  exports: [ChallengesService, ChallengeGateway],
 })
 export class ChallengesModule {}
