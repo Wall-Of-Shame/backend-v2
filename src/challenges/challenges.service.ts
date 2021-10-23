@@ -1,5 +1,5 @@
 import { ChallengeInviteType, Prisma } from '.prisma/client';
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { Global, HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { isBefore, parseJSON } from 'date-fns';
 import { orderBy } from 'lodash';
 import { PrismaService } from '../prisma.service';
@@ -21,6 +21,7 @@ import { VoteData } from '../votes/votes.entities';
 import { Challenge, Participant, User } from '@prisma/client';
 import { CHALLENGE_COMPLETION_AWARD } from 'src/store/store.entity';
 
+@Global()
 @Injectable()
 export class ChallengesService {
   constructor(private prisma: PrismaService) {}
@@ -186,7 +187,7 @@ export class ChallengesService {
   async create(
     userId: string,
     createChallengeDto: CreateChallengeDto,
-  ): Promise<void> {
+  ): Promise<Challenge> {
     const { participants } = createChallengeDto;
     const qUserIds: { userId: string; joined_at?: Date }[] =
       await this.prisma.user.findMany({
@@ -214,7 +215,7 @@ export class ChallengesService {
       type,
       inviteType = ChallengeInviteType.PRIVATE,
     } = createChallengeDto;
-    await this.prisma.challenge.create({
+    const result = await this.prisma.challenge.create({
       data: {
         title,
         description,
@@ -231,6 +232,8 @@ export class ChallengesService {
         },
       },
     });
+
+    return result;
   }
 
   async getUserChallenges(userId: string): Promise<ChallengeList> {
@@ -367,7 +370,7 @@ export class ChallengesService {
     userId: string,
     challengeId: string,
     updateChallengeDto: UpdateChallengeDto,
-  ): Promise<void> {
+  ): Promise<Challenge> {
     const challenge = await this.prisma.challenge.findFirst({
       where: {
         challengeId,
@@ -446,7 +449,8 @@ export class ChallengesService {
       };
     }
 
-    await this.prisma.challenge.update(args);
+    const result: Challenge = await this.prisma.challenge.update(args);
+    return result;
   }
 
   async acceptChallenge(userId: string, challengeId: string): Promise<void> {
@@ -838,7 +842,7 @@ export class ChallengesService {
     accuserId: string,
     challengeId: string,
     voteData: SubmitVoteDto,
-  ): Promise<void> {
+  ): Promise<string | null> {
     const { victimId } = voteData;
     const userParticipant = await this.prisma.participant
       .findMany({
@@ -872,19 +876,58 @@ export class ChallengesService {
       throw new HttpException('Bad request', HttpStatus.BAD_REQUEST);
     }
 
-    try {
-      const existingVote = await this.prisma.vote.findUnique({
-        where: {
-          challengeId_victimId_accuserId: {
-            challengeId,
-            victimId,
-            accuserId,
-          },
+    const existingVote = await this.prisma.vote.findUnique({
+      where: {
+        challengeId_victimId_accuserId: {
+          challengeId,
+          victimId,
+          accuserId,
         },
-      });
+      },
+    });
+    if (existingVote) {
+      throw new HttpException('User has already voted', HttpStatus.BAD_REQUEST);
+    }
 
-      if (existingVote) {
-        return;
+    const participantCount = await this.prisma.participant.count({
+      where: { challengeId, joined_at: { not: null } },
+    });
+
+    if (participantCount <= 2) {
+      throw new HttpException(
+        'No votes allowed for challenges with less than 2 participants',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const midPoint = 0.5 * participantCount;
+    const currCount = await this.prisma.vote.count({
+      where: { challengeId, victimId },
+    });
+
+    try {
+      if (currCount + 1 >= midPoint && currCount < midPoint) {
+        await this.prisma.$transaction([
+          this.prisma.vote.create({
+            data: {
+              victimId,
+              accuserId,
+              challengeId,
+            },
+          }),
+          this.prisma.participant.update({
+            where: {
+              challengeId_userId: {
+                challengeId,
+                userId: victimId,
+              },
+            },
+            data: {
+              has_been_vetoed: true,
+            },
+          }),
+        ]);
+        return victimId;
       } else {
         await this.prisma.vote.create({
           data: {
@@ -893,7 +936,7 @@ export class ChallengesService {
             challengeId,
           },
         });
-        return;
+        return null;
       }
     } catch (error) {
       throw new HttpException('Server error', HttpStatus.INTERNAL_SERVER_ERROR);
@@ -945,6 +988,54 @@ export class ChallengesService {
         },
         accusers: countMap.get(p.userId) ?? [],
       }));
+
+    return result;
+  }
+
+  async getShame(
+    userId: string,
+    challengeId: string,
+  ): Promise<ShamedList | null> {
+    const p = await this.prisma.participant
+      .findMany({
+        where: {
+          challengeId,
+          userId,
+          challenge: {
+            endAt: { lte: new Date() },
+            result_released_at: { not: null },
+          },
+          applied_protec: null,
+          OR: [{ completed_at: null }, { has_been_vetoed: true }],
+        },
+        include: {
+          challenge: true,
+          user: true,
+        },
+      })
+      .then((res) => res[0]);
+
+    if (!p) {
+      return null;
+    }
+
+    const result: ShamedList = {
+      id: `${p.userId}:${p.challengeId}`,
+      name: p.user.name,
+      title: p.challenge.title,
+      type: p.has_been_vetoed ? 'cheat' : 'shame',
+      time: p.challenge.result_released_at!.toISOString(), // safe to do so due to the query
+      avatar: {
+        animal: p.user.avatar_animal,
+        color: p.user.avatar_color,
+        background: p.user.avatar_bg,
+      },
+      effect: {
+        tomato: p.effect_tomato,
+        egg: p.effect_egg,
+        poop: p.effect_poop,
+      },
+    };
 
     return result;
   }

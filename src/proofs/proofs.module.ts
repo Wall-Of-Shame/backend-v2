@@ -1,10 +1,12 @@
 import { Module } from '@nestjs/common';
-import { ChallengesService } from '../challenges/challenges.service';
+import { ChallengesModule } from 'src/challenges/challenges.module';
+import { CronModule } from 'src/cron/cron.module';
 import { PrismaService } from '../prisma.service';
 import { ProofsController } from './proofs.controller';
 
 @Module({
+  imports: [CronModule, ChallengesModule],
   controllers: [ProofsController],
-  providers: [PrismaService, ChallengesService],
+  providers: [PrismaService],
 })
 export class ProofsModule {}

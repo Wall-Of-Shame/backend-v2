@@ -7,17 +7,18 @@ import {
   MessageBody,
   WsException,
 } from '@nestjs/websockets';
-import { UsersService } from './users/users.service';
-import { UseGuards } from '@nestjs/common';
-import { JwtWsAuthGuard } from './auth/jwt-auth-ws.guard';
+import { UsersService } from '../users/users.service';
+import { Logger, OnApplicationBootstrap, UseGuards } from '@nestjs/common';
+import { JwtWsAuthGuard } from '../auth/jwt-auth-ws.guard';
 import { Server, Socket } from 'socket.io';
-import { UserList } from './users/entities/user.entity';
-import { ChallengesService } from './challenges/challenges.service';
-import { UserWsId } from './auth/user.decorator';
-import { VetoedParticipantsDto } from './challenges/dto/vetoed-participants.dto';
-import { WsLogger } from './middleware/ws-logger.middleware';
-import { AppEmitter } from './app.emitter';
-import { ShamedList } from './challenges/entities/challenge.entity';
+import { UserList } from '../users/entities/user.entity';
+import { ChallengesService } from './challenges.service';
+import { UserWsId } from '../auth/user.decorator';
+import { ChallengeData, ShamedList } from './entities/challenge.entity';
+import { PrismaService } from 'src/prisma.service';
+import { CronService } from 'src/cron/cron.service';
+import { CronJob } from 'cron';
+import { Challenge } from '.prisma/client';
 
 export const EVENTS = {
   connection: 'connection',
@@ -34,14 +35,17 @@ export const EVENTS = {
 };
 
 @WebSocketGateway({ transports: ['websocket', 'polling'] })
-export class AppGateway implements OnGatewayConnection {
+export class ChallengeGateway
+  implements OnGatewayConnection, OnApplicationBootstrap
+{
   constructor(
+    private prisma: PrismaService,
     private readonly usersService: UsersService,
     private readonly challengesService: ChallengesService,
-    private readonly appEmitter: AppEmitter,
+    private readonly cronService: CronService,
   ) {}
 
-  private readonly wsLogger = new WsLogger();
+  private readonly wsLogger = new Logger(ChallengeGateway.name);
 
   @WebSocketServer()
   server: Server;
@@ -49,7 +53,41 @@ export class AppGateway implements OnGatewayConnection {
   async handleConnection(socket: Socket) {
     const event = EVENTS.connection;
     socket.emit(event, { clientId: socket.id }); // success message
-    this.wsLogger.log(socket, event, 'EMIT');
+    this.wsLogger.log(`Socket ${socket.id}: CONNECTED`);
+  }
+
+  async onApplicationBootstrap() {
+    const challenges = await this.prisma.challenge.findMany({
+      where: { endAt: { gte: new Date() } },
+    });
+
+    challenges.forEach((c) => this.addCronJob(c));
+
+    this.cronService.logStats();
+  }
+
+  addCronJob(c: Challenge): void {
+    this.cronService.addCronJob(
+      c.challengeId,
+      new CronJob(c.endAt, () => {
+        this.wsLogger.log(`Auto releasing results for ${c.challengeId}`);
+        this.prisma.challenge
+          .update({
+            where: { challengeId: c.challengeId },
+            data: {
+              result_released_at: c.endAt,
+            },
+          })
+          .then((_) => {
+            this.wsLogger.log(`Notifying everyone on ${c.challengeId}`);
+            this.releaseResultsNotify(this.server, c.challengeId);
+          });
+      }),
+    );
+  }
+
+  editCronJob(c: Challenge): void {
+    this.cronService.changeCronJobDate(c.challengeId, c.endAt);
   }
 
   /**
@@ -110,7 +148,7 @@ export class AppGateway implements OnGatewayConnection {
     try {
       if (challengeId) {
         socket.join(challengeId);
-        await this.appEmitter.challengeUpdateNotify(this.server, challengeId);
+        await this.challengeUpdateNotify(this.server, challengeId);
         this.wsLogger.log(socket, event, 'EMIT');
       }
     } catch (error) {
@@ -190,7 +228,7 @@ export class AppGateway implements OnGatewayConnection {
     try {
       // TODO: refactor as this is same code as join room
       socket.join(challengeId);
-      await this.appEmitter.challengeUpdateNotify(this.server, challengeId);
+      await this.challengeUpdateNotify(this.server, challengeId);
       this.wsLogger.log(socket, event, 'EMIT');
     } catch (error) {
       console.log(error);
@@ -268,7 +306,7 @@ export class AppGateway implements OnGatewayConnection {
     }
 
     try {
-      await this.appEmitter.challengeUpdateNotify(this.server, challengeId);
+      await this.challengeUpdateNotify(this.server, challengeId);
     } catch (error) {
       console.log(error);
       throw new WsException('Failed to notify room');
@@ -276,25 +314,11 @@ export class AppGateway implements OnGatewayConnection {
   }
 
   /**
+   * Deprecate due to change in user flow.
    * Handles the challengeReleaseResults event.
    * => Informs all sockets of new leaderboard
    * => Informs all sockets of new live update
-   *
-   * Expecting:
-   *
-   * ```
-   * {
-   *  challengeId: string,
-   *  data: {
-   *    vetoedParticipants: string[]
-   *  }
-   * }
-   * ```
-   *
-   * Returns:
-   *  EMITS:
-   *    ON challengeReleaseResults :: TYPE UserList[]
-   */
+
   @UseGuards(JwtWsAuthGuard)
   @SubscribeMessage(EVENTS.challengeReleaseResults)
   async releaseChallengeResults(
@@ -313,8 +337,9 @@ export class AppGateway implements OnGatewayConnection {
       'ws',
     );
 
-    await this.appEmitter.releaseResultsNotify(this.server, challengeId);
+    await this.releaseResultsNotify(this.server, challengeId);
   }
+    */
 
   /**
    * Handles the shameListGet event.
@@ -340,5 +365,71 @@ export class AppGateway implements OnGatewayConnection {
 
     this.wsLogger.log(socket, event, 'EMIT');
     return result;
+  }
+
+  async notifyCheater(victimId: string, challengeId: string) {
+    const cheater = await this.challengesService.getShame(
+      victimId,
+      challengeId,
+    );
+    if (!cheater) {
+      return;
+    }
+
+    this.server.emit(EVENTS.shameListUpdate, [cheater]);
+    this.wsLogger.log(
+      `Emitting cheater ${victimId} through ${EVENTS.shameListUpdate}`,
+    );
+  }
+
+  private async releaseResultsNotify(
+    server: Server,
+    challengeId: string,
+  ): Promise<void> {
+    await this.emitNewGlobalWall(server, EVENTS.globalLeaderboard);
+    await this.emitNewShamedListEntries(
+      server,
+      challengeId,
+      EVENTS.shameListUpdate,
+    );
+  }
+
+  private async challengeUpdateNotify(
+    server: Server,
+    challengeId: string,
+  ): Promise<void> {
+    try {
+      if (!challengeId) {
+        return;
+      }
+
+      const data: ChallengeData = await this.challengesService.findOne(
+        challengeId,
+      );
+      server.in(challengeId).emit(EVENTS.roomUpdate, data);
+    } catch (error) {
+      console.log(error);
+      throw new WsException('Failed to emit roomUpdate');
+    }
+  }
+
+  private async emitNewGlobalWall(
+    server: Server,
+    event: string,
+  ): Promise<void> {
+    const results = await this.usersService.getGlobalLeaderboard();
+    server.emit(event, results);
+    console.log('SOCKET: -<GLOBAL>- || EVENT: ' + event);
+  }
+
+  private async emitNewShamedListEntries(
+    server: Server,
+    challengeId: string,
+    event: string,
+  ): Promise<void> {
+    const results: ShamedList[] =
+      await this.challengesService.getShamedListForChallenge(challengeId);
+    server.emit(event, results);
+    console.log('SOCKET: -<GLOBAL>- || EVENT: ' + event);
   }
 }

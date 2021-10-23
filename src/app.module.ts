@@ -5,15 +5,14 @@ import { AuthModule } from './auth/auth.module';
 import { ChallengesModule } from './challenges/challenges.module';
 import { ProofsModule } from './proofs/proofs.module';
 import { ConfigModule } from '@nestjs/config';
-import { AppGateway } from './app.gateway';
-import { AppEmitter } from './app.emitter';
-import { PrismaService } from './prisma.service';
 import { VotesModule } from './votes/votes.module';
 import { FeedbackModule } from './feedback/feedback.module';
 import { MailModule } from './mail/mail.module';
 import { FriendsModule } from './friends/friends.module';
 import { StoreModule } from './store/store.module';
 import { ShameModule } from './shame/shame.module';
+import { ScheduleModule } from '@nestjs/schedule';
+import { CronModule } from './cron/cron.module';
 
 @Module({
   imports: [
@@ -21,9 +20,11 @@ import { ShameModule } from './shame/shame.module';
     AuthModule,
     ChallengesModule,
     ProofsModule,
+    ScheduleModule.forRoot(),
     ConfigModule.forRoot({
       load: [configuration],
     }),
+    CronModule,
     VotesModule,
     FeedbackModule,
     MailModule,
@@ -31,6 +32,5 @@ import { ShameModule } from './shame/shame.module';
     StoreModule,
     ShameModule,
   ],
-  providers: [PrismaService, AppEmitter, AppGateway],
 })
 export class AppModule {}
