@@ -899,7 +899,7 @@ export class ChallengesService {
     });
 
     try {
-      if (currCount + 1 >= midPoint) {
+      if (currCount + 1 >= midPoint && currCount < midPoint) {
         await this.prisma.$transaction([
           this.prisma.vote.create({
             data: {
