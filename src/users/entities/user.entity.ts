@@ -23,6 +23,10 @@ export class UserData {
     griefCount: number;
     protecCount: number;
   };
+  friends: {
+    pendingAccept: string[];
+    accepted: string[];
+  };
 }
 
 export class UserList {

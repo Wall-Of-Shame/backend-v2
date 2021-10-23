@@ -115,6 +115,24 @@ export class UsersService {
     }
 
     const user = results[0];
+
+    const userFriends = await this.prisma.user.findFirst({
+      where: { userId: user.userId },
+      include: {
+        contacts_pers1: true,
+      },
+    });
+
+    const pendingAccept: string[] = [];
+    const accepted: string[] = [];
+    userFriends.contacts_pers1.forEach((c) => {
+      if (c.accepted_at) {
+        accepted.push(c.pers2_id);
+      } else {
+        pendingAccept.push(c.pers2_id);
+      }
+    });
+
     return {
       userId: user.userId,
       username: user.username,
@@ -133,6 +151,10 @@ export class UsersService {
         points: user.points,
         protecCount: user.powerup_protec_count,
         griefCount: user.powerup_grief_count,
+      },
+      friends: {
+        accepted,
+        pendingAccept,
       },
       failedChallengeCount: user.failedCount,
       completedChallengeCount: user.completedCount,
