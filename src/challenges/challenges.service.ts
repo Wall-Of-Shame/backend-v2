@@ -323,7 +323,7 @@ export class ChallengesService {
         },
         owner: true,
       },
-      orderBy: [{ participants: { _count: 'desc' } }, { title: 'asc' }],
+      orderBy: [{ participants: { _count: 'desc' } }, { title: 'desc' }],
     });
 
     const publicChallenges = rawPublicChallenges.map(this.formatChallenge);

@@ -208,25 +208,36 @@ export async function featuredCli(
 
 const featuredChallenges: [string, string, string, Date, Date][] = [
   [
-    'Sign up for NUS 19th Steps and vote for Wall of Shame',
-    'Sign up for NUS 19th STEPS event and check out our final product! Remember to vote for us as your favourite XD',
-    'https://isteps.comp.nus.edu.sg/static/brand-logo.png',
-    new Date(2021, 10, 1),
-    new Date(2021, 10, 11),
+    'Vote Wall of Shame for the 19th STePs',
+    `The School of Computing Term Project Showcase (STePS) is one of the largest event, similar to Trade shows, aims to bring together and present selected student projects/products in the School of Computing (SoC) to facilitate independent peer learning, entrepreneurship and effective employment with modern flipped career-fair approach.
+
+    The 19th STePs is approaching and Wall of Shame will be participating in it!
+    To complete this challenge, you will need to vote for us 😊
+    `,
+    'https://res.cloudinary.com/wallofshame/image/upload/v1635056434/19thsteps.png',
+    new Date(2021, 10, 14),
+    new Date(2021, 10, 15),
   ],
   [
-    'Take care of your body and run 10km this month!',
-    'Take care of your body pls. Run a total of 10km',
-    'https://img.freepik.com/free-vector/cute-avocado-exercise-running-treadmill-cartoon-hand-drawn-illustration_204997-87.jpg?size=338&ext=jpg',
+    'National Steps Challenge Season 6',
+    `Boost your mood and foster kampong spirit as you get moving with your community. Stay active and help your GRC climb the leaderboard by clocking steps and moderate to Vigorous Physical Activity (MVPA) minutes.
+
+    Download and launch the Healthy 365 app
+    Sign up for the National Steps Challenge - Season 6
+    Walk more than 10,000 steps daily
+    Take a screenshot and upload your proof to win exclusive prizes!
+    `,
+    'https://res.cloudinary.com/wallofshame/image/upload/v1635056443/nationalstepschallenge.png',
     new Date(2021, 10, 1),
-    new Date(2021, 10, 30),
+    new Date(2021, 11, 25),
   ],
   [
-    'Make handmade pasta from scratch',
-    "Make some pasta from scratch. It's easy!",
-    'https://i.pinimg.com/736x/53/18/d4/5318d4936cac398bf2cc651523e89846.jpg',
-    new Date(2021, 10, 1),
-    new Date(2021, 10, 30),
+    'Call For Ideas Fund 2021',
+    `The Call for Ideas Fund aims to help applicants kickstart projects that seek to resolve an environmental challenge in the local community. These projects should seek to encourage the community to make environmentally responsible choices through outreach and education efforts.\n
+  Upload your best idea and stand a chance to be funded for up to $20,000!`,
+    'https://res.cloudinary.com/wallofshame/image/upload/v1635056443/callforideasfund.png',
+    new Date(2021, 11, 1),
+    new Date(2021, 11, 20),
   ],
 ];
 
