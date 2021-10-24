@@ -18,8 +18,7 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
-    "tsc": "tsc --noEmit",
-    "ts-node": "ts-node"
+    "tsc": "tsc --noEmit"
   },
   "dependencies": {
     "@nestjs-modules/mailer": "^1.6.0",
@@ -50,6 +49,7 @@
     "reflect-metadata": "^0.1.13",
     "rimraf": "^3.0.2",
     "rxjs": "^7.2.0",
+    "ts-node": "^10.4.0",
     "socket.io": "^4.2.0"
   },
   "devDependencies": {
@@ -78,7 +78,6 @@
     "supertest": "^6.1.3",
     "ts-jest": "^27.0.3",
     "ts-loader": "^9.2.3",
-    "ts-node": "^10.4.0",
     "tsconfig-paths": "^3.10.1",
     "typescript": "^4.3.5"
   },
