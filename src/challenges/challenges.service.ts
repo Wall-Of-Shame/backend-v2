@@ -407,11 +407,11 @@ export class ChallengesService {
     };
 
     if (updateChallengeDto.participants) {
-      const { participants: reqParticipants } = updateChallengeDto;
-      const participants = await this.prisma.user.findMany({
+      const { participants: reqIds } = updateChallengeDto;
+      const reqParticipants = await this.prisma.user.findMany({
         where: {
           userId: {
-            in: reqParticipants,
+            in: reqIds,
             not: userId, // ensure owner is untouched
           },
           // ensure not initiated users cannot be added as participants
@@ -428,23 +428,13 @@ export class ChallengesService {
         },
       });
 
-      const newParticipants = participants.filter(
+      const newParticipants = reqParticipants.filter(
         (p) => !challenge.participants.find((e) => e.userId === p.userId),
-      );
-      const removedParticipants = challenge.participants.filter(
-        (e) =>
-          e.userId !== challenge.ownerId &&
-          !e.applied_protec &&
-          !e.griefed_by_userId &&
-          !participants.find((p) => p.userId === e.userId),
       );
 
       args.data['participants'] = {
         createMany: {
           data: newParticipants.map((p) => ({ userId: p.userId })),
-        },
-        deleteMany: {
-          userId: { in: removedParticipants.map((p) => p.userId) },
         },
       };
     }
