@@ -21,11 +21,15 @@ import { VoteData } from '../votes/votes.entities';
 import { Challenge, Participant, User } from '@prisma/client';
 import { CHALLENGE_COMPLETION_AWARD } from 'src/store/store.entity';
 import { intervalToDuration, add } from 'date-fns';
+import { MailService } from 'src/mail/mail.service';
 
 @Global()
 @Injectable()
 export class ChallengesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private mailService: MailService,
+  ) {}
 
   // checks if challenge start is before its end
   private isStartBeforeEnd(start: Date | null, end: Date): boolean {
@@ -198,23 +202,29 @@ export class ChallengesService {
     userId: string,
     createChallengeDto: CreateChallengeDto,
   ): Promise<Challenge> {
-    const { participants } = createChallengeDto;
-    const qUserIds: { userId: string; joined_at?: Date }[] =
-      await this.prisma.user.findMany({
-        where: {
-          userId: { in: participants },
-          username: { not: null },
-          name: { not: null },
-          avatar_animal: { not: null },
-          avatar_bg: { not: null },
-          avatar_color: { not: null },
-        },
-        select: {
-          userId: true,
-        },
-      });
+    const owner = await this.prisma.user.findFirst({
+      where: { userId },
+    });
+    if (!owner) {
+      throw new HttpException('Not found', HttpStatus.UNAUTHORIZED);
+    }
 
-    const pUserIds = qUserIds.filter((p) => p.userId !== userId);
+    const { participants } = createChallengeDto;
+    const qUsers: User[] = await this.prisma.user.findMany({
+      where: {
+        userId: { in: participants },
+        username: { not: null },
+        name: { not: null },
+        avatar_animal: { not: null },
+        avatar_bg: { not: null },
+        avatar_color: { not: null },
+      },
+    });
+
+    const pUsers = qUsers.filter((p) => p.userId !== userId);
+    const pUserIds: { userId: string; joined_at?: Date | null }[] = pUsers.map(
+      (p) => ({ userId: p.userId }),
+    );
     pUserIds.push({ userId, joined_at: new Date() });
 
     const {
@@ -242,6 +252,12 @@ export class ChallengesService {
         },
       },
     });
+
+    this.mailService.sendInvites(
+      result,
+      owner,
+      pUsers.filter((p) => p.cfg_invites_notif),
+    );
 
     return result;
   }
@@ -424,6 +440,7 @@ export class ChallengesService {
       },
     };
 
+    let emailRecipients: User[] | undefined;
     if (updateChallengeDto.participants) {
       const { participants: reqIds } = updateChallengeDto;
       const reqParticipants = await this.prisma.user.findMany({
@@ -439,16 +456,12 @@ export class ChallengesService {
           avatar_color: { not: null },
           avatar_bg: { not: null },
         },
-        select: {
-          userId: true,
-          fb_reg_token: true,
-          cfg_invites_notif: true,
-        },
       });
 
       const newParticipants = reqParticipants.filter(
         (p) => !challenge.participants.find((e) => e.userId === p.userId),
       );
+      emailRecipients = newParticipants;
 
       args.data['participants'] = {
         createMany: {
@@ -458,6 +471,19 @@ export class ChallengesService {
     }
 
     const result: Challenge = await this.prisma.challenge.update(args);
+
+    if (!updateChallengeDto.participants || !emailRecipients) {
+      return result;
+    }
+
+    const owner = await this.prisma.user.findFirst({
+      where: { userId },
+    });
+
+    if (owner) {
+      emailRecipients = emailRecipients.filter((u) => u.cfg_invites_notif);
+      this.mailService.sendInvites(result, owner, emailRecipients);
+    }
     return result;
   }
 
