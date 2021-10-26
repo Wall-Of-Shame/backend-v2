@@ -51,6 +51,7 @@ export class CronService {
     }
 
     job.setTime(new CronTime(newDate));
+    job.start();
     this.logger.log(
       `Job ${name} changed. It will run at ${newDate.toString()} instead.`,
     );
