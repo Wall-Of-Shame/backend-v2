@@ -1,6 +1,6 @@
 import { ChallengeInviteType, Prisma } from '.prisma/client';
 import { Global, HttpException, HttpStatus, Injectable } from '@nestjs/common';
-import { isBefore, parseJSON } from 'date-fns';
+import { isAfter, isBefore, parseJSON } from 'date-fns';
 import { orderBy } from 'lodash';
 import { PrismaService } from '../prisma.service';
 import { SubmitProofDto } from '../proofs/dto/submit-proof.dto';
@@ -20,7 +20,7 @@ import { SubmitVoteDto } from '../votes/dto/submit-vote.dto';
 import { VoteData } from '../votes/votes.entities';
 import { Challenge, Participant, User } from '@prisma/client';
 import { CHALLENGE_COMPLETION_AWARD } from 'src/store/store.entity';
-import intervalToDuration from 'date-fns/intervalToDuration';
+import { intervalToDuration, add } from 'date-fns';
 
 @Global()
 @Injectable()
@@ -54,11 +54,8 @@ export class ChallengesService {
   }
 
   private isInVotingState(endAt: Date, now: Date): boolean {
-    const durationFromEndToNow: Duration = intervalToDuration({
-      start: endAt,
-      end: now,
-    });
-    if (durationFromEndToNow.minutes <= 60) {
+    const endOfVotingPeriod = add(endAt, { minutes: 60 });
+    if (isBefore(endAt, now) && isBefore(now, endOfVotingPeriod)) {
       return true;
     } else {
       return false;
@@ -895,6 +892,8 @@ export class ChallengesService {
         HttpStatus.BAD_REQUEST,
       );
     }
+
+    console.log(this.isInVotingState(challenge.endAt, new Date()));
 
     const existingVote = await this.prisma.vote.findUnique({
       where: {
