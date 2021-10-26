@@ -1,6 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { UserList } from '../users/entities/user.entity';
+import { UnfriendDto } from './entities/friend.entity';
 
 @Injectable()
 export class FriendsService {
@@ -24,5 +25,33 @@ export class FriendsService {
     );
 
     return results ?? [];
+  }
+
+  async unfriend(userId: string, unfriendDto: UnfriendDto): Promise<void> {
+    const { userId: pers2Id } = unfriendDto;
+
+    // TODO: move validation somewhere else
+    if (!userId || !pers2Id) {
+      throw new HttpException('Bad request', HttpStatus.BAD_REQUEST);
+    }
+
+    const friend = await this.prisma.contact.findFirst({
+      where: { pers1_id: userId, pers2_id: pers2Id },
+    });
+
+    if (!friend) {
+      throw new HttpException('Friend not found', HttpStatus.BAD_REQUEST);
+    } else if (!friend.accepted_at) {
+      throw new HttpException('Invalid call', HttpStatus.BAD_REQUEST);
+    }
+
+    await this.prisma.contact.deleteMany({
+      where: {
+        OR: [
+          { pers1_id: userId, pers2_id: pers2Id },
+          { pers1_id: pers2Id, pers2_id: userId },
+        ],
+      },
+    });
   }
 }

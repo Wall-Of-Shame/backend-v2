@@ -6,7 +6,7 @@ import {
   UseGuards,
   HttpCode,
 } from '@nestjs/common';
-import { FriendRequestsService } from './friend-requests.service';
+import { FriendRequestsService } from './requests.service';
 import { UserId } from '../auth/user.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import {
