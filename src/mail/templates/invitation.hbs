@@ -1,0 +1,31 @@
+<html>
+    <head>
+        <style>
+
+        </style>
+    </head>
+
+    <body>
+        <div class="message">
+            Hi {{ recipientName }}!
+
+            {{ ownerName }} has invited you to a challenge. Come over and to join them!
+
+            <div class="challenge-details">
+                <h3>Challenge Details:</h3>
+                <p>
+                    Title: {{ title }}
+                    Description: {{ description }}
+                    Challenge starts at: {{ startAt }}
+                    Challenge ends at: {{ endAt }}
+                </p>
+            </div>
+
+            <button class="accept-button">Go to the Wall of Shame</button>
+        </div>
+
+        <div class="footer">
+            <p>Send by the team behind the <a href="https://www.wallofshame.io/">Wall Of Shame</a></p>
+        </div>
+    </body>
+</html>
