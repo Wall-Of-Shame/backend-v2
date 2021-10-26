@@ -33,6 +33,7 @@ export class ChallengeList {
   ongoing: ChallengeData[];
   pendingStart: ChallengeData[];
   pendingResponse: ChallengeData[];
+  votingPeriod: ChallengeData[];
   history: ChallengeData[];
 }
 

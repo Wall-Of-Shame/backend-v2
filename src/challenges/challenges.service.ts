@@ -1,6 +1,6 @@
 import { ChallengeInviteType, Prisma } from '.prisma/client';
 import { Global, HttpException, HttpStatus, Injectable } from '@nestjs/common';
-import { isBefore, parseJSON } from 'date-fns';
+import { isAfter, isBefore, parseJSON } from 'date-fns';
 import { orderBy } from 'lodash';
 import { PrismaService } from '../prisma.service';
 import { SubmitProofDto } from '../proofs/dto/submit-proof.dto';
@@ -20,6 +20,7 @@ import { SubmitVoteDto } from '../votes/dto/submit-vote.dto';
 import { VoteData } from '../votes/votes.entities';
 import { Challenge, Participant, User } from '@prisma/client';
 import { CHALLENGE_COMPLETION_AWARD } from 'src/store/store.entity';
+import { intervalToDuration, add } from 'date-fns';
 
 @Global()
 @Injectable()
@@ -50,6 +51,15 @@ export class ChallengesService {
       return false;
     }
     return isBefore(start, new Date());
+  }
+
+  private isInVotingState(endAt: Date, now: Date): boolean {
+    const endOfVotingPeriod = add(endAt, { minutes: 60 });
+    if (isBefore(endAt, now) && isBefore(now, endOfVotingPeriod)) {
+      return true;
+    } else {
+      return false;
+    }
   }
 
   private formatChallenge(
@@ -264,8 +274,10 @@ export class ChallengesService {
     const ongoing: ChallengeData[] = [];
     const pendingStart: ChallengeData[] = [];
     const pendingResponse: ChallengeData[] = [];
+    const votingPeriod: ChallengeData[] = [];
     const history: ChallengeData[] = [];
 
+    const now = new Date();
     for (const participantOf of participatingInstances) {
       const c: ChallengeData = this.formatChallenge(participantOf.challenge);
 
@@ -273,8 +285,13 @@ export class ChallengesService {
         this.hasChallengeEnded(participantOf.challenge.endAt) &&
         this.hasUserAccepted(participantOf.joined_at)
       ) {
-        // history
-        history.push(c);
+        if (this.isInVotingState(participantOf.challenge.endAt, now)) {
+          // votingPeriod
+          votingPeriod.push(c);
+        } else {
+          // history
+          history.push(c);
+        }
       } else if (
         this.hasUserAccepted(participantOf.joined_at) &&
         this.hasChallengeStarted(participantOf.challenge.startAt)
@@ -303,6 +320,7 @@ export class ChallengesService {
       ongoing,
       pendingStart,
       pendingResponse,
+      votingPeriod,
       history: sortedHistory,
     };
   }
@@ -862,9 +880,20 @@ export class ChallengesService {
       where: { challengeId },
       select: { endAt: true },
     });
-    if (!challenge || !this.hasChallengeEnded(challenge.endAt)) {
+    if (!challenge) {
       throw new HttpException('Bad request', HttpStatus.BAD_REQUEST);
     }
+    if (
+      !this.hasChallengeEnded(challenge.endAt) ||
+      !this.isInVotingState(challenge.endAt, new Date())
+    ) {
+      throw new HttpException(
+        'Invalid challenge state',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    console.log(this.isInVotingState(challenge.endAt, new Date()));
 
     const existingVote = await this.prisma.vote.findUnique({
       where: {
