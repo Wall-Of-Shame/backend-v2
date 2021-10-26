@@ -107,14 +107,16 @@ export class ChallengeGateway
   @SubscribeMessage(EVENTS.globalLeaderboard)
   async getGlobalLeaderboard(@ConnectedSocket() socket: Socket) {
     const event = EVENTS.globalLeaderboard;
-    this.wsLogger.log(socket, event, 'RECEIVE');
+    this.wsLogger.log(`Socket ${socket.id}: Received ${event}`);
 
     try {
       const results: UserList[] =
         await this.usersService.getGlobalLeaderboard();
 
       socket.emit(event, results);
-      this.wsLogger.log(socket, event, 'EMIT');
+      this.wsLogger.log(
+        `Socket ${socket.id}: Emited ${event} with payload of ${results.length} size`,
+      );
     } catch (error) {
       console.log(error);
       throw new WsException(`Failed to emit ${event}`);
@@ -143,13 +145,13 @@ export class ChallengeGateway
     @MessageBody('challengeId') challengeId: string,
   ) {
     const event = EVENTS.roomJoin;
-    this.wsLogger.log(socket, event, 'RECEIVE');
+    this.wsLogger.log(`Socket ${socket.id}: Received ${event}`);
 
     try {
       if (challengeId) {
         socket.join(challengeId);
         await this.challengeUpdateNotify(this.server, challengeId);
-        this.wsLogger.log(socket, event, 'EMIT');
+        this.wsLogger.log(`Socket ${socket.id}: Emited ${event}`);
       }
     } catch (error) {
       console.log(error);
@@ -179,12 +181,12 @@ export class ChallengeGateway
     @MessageBody('challengeId') challengeId: string,
   ) {
     const event = EVENTS.roomLeave;
-    this.wsLogger.log(socket, event, 'RECEIVE');
+    this.wsLogger.log(`Socket ${socket.id}: Received ${event}`);
 
     try {
       if (challengeId) {
         socket.leave(challengeId);
-        this.wsLogger.log(socket, event, 'EMIT');
+        this.wsLogger.log(`Socket ${socket.id}: Emited ${event}`);
         return { roomId: challengeId };
       }
     } catch (error) {
@@ -216,7 +218,7 @@ export class ChallengeGateway
     @MessageBody('challengeId') challengeId: string,
   ) {
     const event = EVENTS.challengeAccept;
-    this.wsLogger.log(socket, event, 'RECEIVE');
+    this.wsLogger.log(`Socket ${socket.id}: Received ${event}`);
 
     try {
       await this.challengesService.acceptChallenge(userId, challengeId);
@@ -229,7 +231,7 @@ export class ChallengeGateway
       // TODO: refactor as this is same code as join room
       socket.join(challengeId);
       await this.challengeUpdateNotify(this.server, challengeId);
-      this.wsLogger.log(socket, event, 'EMIT');
+      this.wsLogger.log(`Socket ${socket.id}: Emited ${event}`);
     } catch (error) {
       console.log(error);
       throw new WsException('Failed to join room');
@@ -259,13 +261,13 @@ export class ChallengeGateway
     @MessageBody('challengeId') challengeId: string,
   ) {
     const event = EVENTS.challengeReject;
-    this.wsLogger.log(socket, event, 'RECEIVE');
+    this.wsLogger.log(`Socket ${socket.id}: Received ${event}`);
 
     try {
       await this.challengesService.rejectChallenge(userId, challengeId);
       socket.leave(challengeId);
 
-      this.wsLogger.log(socket, event, 'EMIT');
+      this.wsLogger.log(`Socket ${socket.id}: Emitted ${event}`);
       return { roomId: challengeId };
     } catch (error) {
       console.log(error);
@@ -296,7 +298,7 @@ export class ChallengeGateway
     @MessageBody('challengeId') challengeId: string,
   ) {
     const event = EVENTS.challengeComplete;
-    this.wsLogger.log(socket, event, 'RECEIVE');
+    this.wsLogger.log(`Socket ${socket.id}: Received ${event}`);
 
     try {
       await this.challengesService.completeChallenge(userId, challengeId);
@@ -360,10 +362,12 @@ export class ChallengeGateway
   async getShameList(@ConnectedSocket() socket: Socket) {
     const event = EVENTS.shameListGet;
 
-    this.wsLogger.log(socket, event, 'RECEIVE');
+    this.wsLogger.log(`Socket ${socket.id}: Received ${event}`);
     const result: ShamedList[] = await this.challengesService.getShameList();
 
-    this.wsLogger.log(socket, event, 'EMIT');
+    this.wsLogger.log(
+      `Socket ${socket.id}: Emitted ${event} with ${result.length} ShameList entries.`,
+    );
     return result;
   }
 
@@ -419,7 +423,9 @@ export class ChallengeGateway
   ): Promise<void> {
     const results = await this.usersService.getGlobalLeaderboard();
     server.emit(event, results);
-    console.log('SOCKET: -<GLOBAL>- || EVENT: ' + event);
+    this.wsLogger.log(
+      `Emitted ${event} toa all sockets with ${results.length} UserList entries`,
+    );
   }
 
   private async emitNewShamedListEntries(
@@ -430,6 +436,8 @@ export class ChallengeGateway
     const results: ShamedList[] =
       await this.challengesService.getShamedListForChallenge(challengeId);
     server.emit(event, results);
-    console.log('SOCKET: -<GLOBAL>- || EVENT: ' + event);
+    this.wsLogger.log(
+      `Emitted ${event} toa all sockets with ${results.length} ShamedList entries`,
+    );
   }
 }

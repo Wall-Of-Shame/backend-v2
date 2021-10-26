@@ -16,7 +16,8 @@ export class CronService {
     job.start();
 
     this.logger.log(
-      `Job ${name} added.\nIt will run at ${runDate.toString()}.`,
+      `Job ${name} added.`,
+      `It will run at ${runDate.toString()}.`,
     );
   }
 
@@ -53,7 +54,8 @@ export class CronService {
     job.setTime(new CronTime(newDate));
     job.start();
     this.logger.log(
-      `Job ${name} changed. It will run at ${newDate.toString()} instead.`,
+      `Job ${name} changed`,
+      `It will run at ${newDate.toString()} instead.`,
     );
   }
 
