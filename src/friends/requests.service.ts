@@ -126,7 +126,6 @@ export class FriendRequestsService {
           accepted_at: now,
         },
       }),
-
       // create inverse
       this.prisma.contact.create({
         data: {
