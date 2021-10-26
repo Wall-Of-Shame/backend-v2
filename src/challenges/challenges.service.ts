@@ -19,8 +19,7 @@ import { WsException } from '@nestjs/websockets';
 import { SubmitVoteDto } from '../votes/dto/submit-vote.dto';
 import { VoteData } from '../votes/votes.entities';
 import { Challenge, Participant, User } from '@prisma/client';
-import { CHALLENGE_COMPLETION_AWARD } from 'src/store/store.entity';
-import { intervalToDuration, add } from 'date-fns';
+import { add } from 'date-fns';
 import { MailService } from 'src/mail/mail.service';
 
 @Global()
@@ -586,29 +585,17 @@ export class ChallengesService {
     }
 
     try {
-      const reward = CHALLENGE_COMPLETION_AWARD;
-
-      await this.prisma.$transaction([
-        this.prisma.participant.update({
-          where: {
-            challengeId_userId: {
-              challengeId,
-              userId,
-            },
-          },
-          data: {
-            completed_at: new Date(),
-          },
-        }),
-        this.prisma.user.update({
-          where: {
+      await this.prisma.participant.update({
+        where: {
+          challengeId_userId: {
+            challengeId,
             userId,
           },
-          data: {
-            points: { increment: reward },
-          },
-        }),
-      ]);
+        },
+        data: {
+          completed_at: new Date(),
+        },
+      });
     } catch (error) {
       if (opType === 'http') {
         // allow for 500 here, unknown error
