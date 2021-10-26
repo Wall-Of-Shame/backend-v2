@@ -5,8 +5,10 @@ import { PrismaService } from '../prisma.service';
 import { UsersService } from '../users/users.service';
 import { CronService } from 'src/cron/cron.service';
 import { ChallengeGateway } from './challenge.gateway';
+import { MailModule } from 'src/mail/mail.module';
 
 @Module({
+  imports: [MailModule],
   controllers: [ChallengesController],
   providers: [
     CronService,
