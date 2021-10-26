@@ -20,6 +20,7 @@ import { SubmitVoteDto } from '../votes/dto/submit-vote.dto';
 import { VoteData } from '../votes/votes.entities';
 import { Challenge, Participant, User } from '@prisma/client';
 import { CHALLENGE_COMPLETION_AWARD } from 'src/store/store.entity';
+import intervalToDuration from 'date-fns/intervalToDuration';
 
 @Global()
 @Injectable()
@@ -50,6 +51,18 @@ export class ChallengesService {
       return false;
     }
     return isBefore(start, new Date());
+  }
+
+  private isInVotingState(endAt: Date, now: Date): boolean {
+    const durationFromEndToNow: Duration = intervalToDuration({
+      start: endAt,
+      end: now,
+    });
+    if (durationFromEndToNow.minutes <= 60) {
+      return true;
+    } else {
+      return false;
+    }
   }
 
   private formatChallenge(
@@ -264,8 +277,10 @@ export class ChallengesService {
     const ongoing: ChallengeData[] = [];
     const pendingStart: ChallengeData[] = [];
     const pendingResponse: ChallengeData[] = [];
+    const votingPeriod: ChallengeData[] = [];
     const history: ChallengeData[] = [];
 
+    const now = new Date();
     for (const participantOf of participatingInstances) {
       const c: ChallengeData = this.formatChallenge(participantOf.challenge);
 
@@ -273,8 +288,13 @@ export class ChallengesService {
         this.hasChallengeEnded(participantOf.challenge.endAt) &&
         this.hasUserAccepted(participantOf.joined_at)
       ) {
-        // history
-        history.push(c);
+        if (this.isInVotingState(participantOf.challenge.endAt, now)) {
+          // votingPeriod
+          votingPeriod.push(c);
+        } else {
+          // history
+          history.push(c);
+        }
       } else if (
         this.hasUserAccepted(participantOf.joined_at) &&
         this.hasChallengeStarted(participantOf.challenge.startAt)
@@ -303,6 +323,7 @@ export class ChallengesService {
       ongoing,
       pendingStart,
       pendingResponse,
+      votingPeriod,
       history: sortedHistory,
     };
   }
