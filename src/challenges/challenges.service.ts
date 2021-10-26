@@ -883,8 +883,17 @@ export class ChallengesService {
       where: { challengeId },
       select: { endAt: true },
     });
-    if (!challenge || !this.hasChallengeEnded(challenge.endAt)) {
+    if (!challenge) {
       throw new HttpException('Bad request', HttpStatus.BAD_REQUEST);
+    }
+    if (
+      !this.hasChallengeEnded(challenge.endAt) ||
+      !this.isInVotingState(challenge.endAt, new Date())
+    ) {
+      throw new HttpException(
+        'Invalid challenge state',
+        HttpStatus.BAD_REQUEST,
+      );
     }
 
     const existingVote = await this.prisma.vote.findUnique({
