@@ -19,6 +19,8 @@ import { PrismaService } from 'src/prisma.service';
 import { CronService } from 'src/cron/cron.service';
 import { CronJob } from 'cron';
 import { Challenge } from '.prisma/client';
+import { add, sub } from 'date-fns';
+import { CHALLENGE_COMPLETION_AWARD } from 'src/store/store.entity';
 
 export const EVENTS = {
   connection: 'connection',
@@ -38,6 +40,9 @@ export const EVENTS = {
 export class ChallengeGateway
   implements OnGatewayConnection, OnApplicationBootstrap
 {
+  JOB_RELEASE_RESULTS = 'release-results';
+  JOB_RELEASE_REWARDS = 'release-rewards';
+
   constructor(
     private prisma: PrismaService,
     private readonly usersService: UsersService,
@@ -57,18 +62,36 @@ export class ChallengeGateway
   }
 
   async onApplicationBootstrap() {
-    const challenges = await this.prisma.challenge.findMany({
-      where: { endAt: { gte: new Date() } },
-    });
+    const now = new Date();
+    const rewardTime = sub(now, { hours: 1 });
 
-    challenges.forEach((c) => this.addCronJob(c));
+    const futureChallenges = await this.prisma.challenge.findMany({
+      where: { endAt: { gte: now } },
+    });
+    futureChallenges.forEach((c) => this.addCronJob(c));
+
+    const challengesPendingRewards = await this.prisma.challenge.findMany({
+      where: {
+        // endAt <= now <= endAt + 1hr
+        endAt: {
+          lte: now,
+          gte: rewardTime,
+        },
+      },
+    });
+    challengesPendingRewards.forEach((c) => this.cronReleaseRewards(c));
 
     this.cronService.logStats();
   }
 
   addCronJob(c: Challenge): void {
+    this.cronReleaseResults(c);
+    this.cronReleaseRewards(c);
+  }
+
+  private cronReleaseResults(c: Challenge): void {
     this.cronService.addCronJob(
-      c.challengeId,
+      `${c.challengeId}-${this.JOB_RELEASE_RESULTS}`,
       new CronJob(c.endAt, () => {
         this.wsLogger.log(`Auto releasing results for ${c.challengeId}`);
         this.prisma.challenge
@@ -86,8 +109,54 @@ export class ChallengeGateway
     );
   }
 
+  private cronReleaseRewards(c: Challenge): void {
+    const reward = CHALLENGE_COMPLETION_AWARD;
+
+    this.cronService.addCronJob(
+      `${c.challengeId}-${this.JOB_RELEASE_REWARDS}`,
+      new CronJob(add(c.endAt, { minutes: 60, seconds: 5 }), () => {
+        this.wsLogger.log(`Rewards distribution for ${c.challengeId}`);
+        this.prisma.participant
+          .findMany({
+            where: {
+              challengeId: c.challengeId,
+              completed_at: { not: null },
+              has_been_vetoed: false,
+            },
+          })
+          .then(async (participants) => {
+            const rewardedUsers = participants.map((p) => p.userId);
+            await this.prisma.$transaction([
+              this.prisma.user.updateMany({
+                where: { userId: { in: rewardedUsers } },
+                data: {
+                  points: { increment: reward },
+                },
+              }),
+              this.prisma.challenge.update({
+                where: { challengeId: c.challengeId },
+                data: { rewards_released_at: new Date() },
+              }),
+            ]);
+            return rewardedUsers;
+          })
+          .then((users) => {
+            this.wsLogger.log(`Rewarded ${users.length} for ${c.challengeId}`);
+          });
+      }),
+    );
+  }
+
   editCronJob(c: Challenge): void {
-    this.cronService.changeCronJobDate(c.challengeId, c.endAt);
+    // TODO: refactor this to share logic between addCronJob and editCronJob
+    this.cronService.changeCronJobDate(
+      `${c.challengeId}-${this.JOB_RELEASE_RESULTS}`,
+      c.endAt,
+    );
+    this.cronService.changeCronJobDate(
+      `${c.challengeId}-${this.JOB_RELEASE_REWARDS}`,
+      add(c.endAt, { minutes: 60, seconds: 5 }),
+    );
   }
 
   /**
