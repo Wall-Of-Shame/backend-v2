@@ -61,6 +61,12 @@ export class ApplyPowerupDto {
   targetUserId?: string | undefined;
 }
 
+export class CompleteChallengeResponse {
+  window: [string, string]; // the current window, [begin, end]
+  pointsInWindow: number;
+  pointsLeft: number;
+}
+
 // Internal type. They do not match to any route specifically, but rather used to construct them.
 type UserMiniBase = Pick<UserList, 'userId' | 'username' | 'name' | 'avatar'>;
 

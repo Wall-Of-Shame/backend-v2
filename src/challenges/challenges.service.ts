@@ -1,6 +1,6 @@
 import { ChallengeInviteType, Prisma } from '.prisma/client';
 import { Global, HttpException, HttpStatus, Injectable } from '@nestjs/common';
-import { isAfter, isBefore, parseJSON } from 'date-fns';
+import { endOfDay, isAfter, isBefore, parseJSON, startOfDay } from 'date-fns';
 import { orderBy } from 'lodash';
 import { PrismaService } from '../prisma.service';
 import { SubmitProofDto } from '../proofs/dto/submit-proof.dto';
@@ -10,6 +10,7 @@ import { UploadApiResponse, v2 as cloudinary } from 'cloudinary';
 import {
   ChallengeData,
   ChallengeList,
+  CompleteChallengeResponse,
   PublicChallengeList,
   ShamedList,
   UserMini,
@@ -19,9 +20,12 @@ import { WsException } from '@nestjs/websockets';
 import { SubmitVoteDto } from '../votes/dto/submit-vote.dto';
 import { VoteData } from '../votes/votes.entities';
 import { Challenge, Participant, User } from '@prisma/client';
-import { CHALLENGE_COMPLETION_AWARD } from 'src/store/store.entity';
-import { intervalToDuration, add } from 'date-fns';
+import { add } from 'date-fns';
 import { MailService } from 'src/mail/mail.service';
+import {
+  CHALLENGE_COMPLETION_AWARD,
+  CHALLENGE_WINDOW_LIMIT,
+} from 'src/store/store.entity';
 
 @Global()
 @Injectable()
@@ -196,6 +200,36 @@ export class ChallengesService {
       }
     }
     return map;
+  }
+
+  async getPointLimit(
+    userId: string,
+    now: Date = new Date(),
+  ): Promise<CompleteChallengeResponse> {
+    const windowStart: Date = startOfDay(now);
+    const windowEnd: Date = endOfDay(now);
+    const rewardedParticipations = await this.prisma.participant.count({
+      where: {
+        userId,
+        challenge: {
+          endAt: {
+            gte: windowStart,
+            lt: windowEnd,
+          },
+        },
+        has_been_vetoed: false,
+        completed_at: { not: null },
+      },
+    });
+    const pointsInWindow = rewardedParticipations * CHALLENGE_COMPLETION_AWARD;
+    return {
+      window: [windowStart.toISOString(), windowEnd.toISOString()],
+      pointsInWindow,
+      pointsLeft:
+        CHALLENGE_WINDOW_LIMIT > pointsInWindow
+          ? CHALLENGE_WINDOW_LIMIT - pointsInWindow
+          : 0,
+    };
   }
 
   async create(
@@ -537,7 +571,7 @@ export class ChallengesService {
     userId: string,
     challengeId: string,
     opType: 'http' | 'ws' = 'http',
-  ): Promise<void> {
+  ): Promise<CompleteChallengeResponse> {
     const participant = await this.prisma.participant.findUnique({
       where: {
         challengeId_userId: { userId, challengeId },
@@ -586,29 +620,22 @@ export class ChallengesService {
     }
 
     try {
-      const reward = CHALLENGE_COMPLETION_AWARD;
-
-      await this.prisma.$transaction([
-        this.prisma.participant.update({
-          where: {
-            challengeId_userId: {
-              challengeId,
-              userId,
-            },
-          },
-          data: {
-            completed_at: new Date(),
-          },
-        }),
-        this.prisma.user.update({
-          where: {
+      await this.prisma.participant.update({
+        where: {
+          challengeId_userId: {
+            challengeId,
             userId,
           },
-          data: {
-            points: { increment: reward },
-          },
-        }),
-      ]);
+        },
+        data: {
+          completed_at: new Date(),
+        },
+      });
+
+      const pointsLimit: CompleteChallengeResponse = await this.getPointLimit(
+        userId,
+      );
+      return pointsLimit;
     } catch (error) {
       if (opType === 'http') {
         // allow for 500 here, unknown error

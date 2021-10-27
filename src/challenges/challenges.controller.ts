@@ -20,7 +20,6 @@ import { ChallengeGateway } from './challenge.gateway';
 import { ChallengesService } from './challenges.service';
 import { CreateChallengeDto } from './dto/create-challenge.dto';
 import { UpdateChallengeDto } from './dto/update-challenge.dto';
-import { VetoedParticipantsDto } from './dto/vetoed-participants.dto';
 import { ApplyPowerupDto } from './entities/challenge.entity';
 
 export type FindAllOpType = 'self' | 'explore' | 'search';
