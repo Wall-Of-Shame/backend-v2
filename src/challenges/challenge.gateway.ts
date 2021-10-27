@@ -111,6 +111,7 @@ export class ChallengeGateway
 
   private cronReleaseRewards(c: Challenge): void {
     const reward = CHALLENGE_COMPLETION_AWARD;
+    const now = new Date();
 
     this.cronService.addCronJob(
       `${c.challengeId}-${this.JOB_RELEASE_REWARDS}`,
@@ -125,7 +126,20 @@ export class ChallengeGateway
             },
           })
           .then(async (participants) => {
-            const rewardedUsers = participants.map((p) => p.userId);
+            const completedUsers = participants.map((p) => p.userId);
+            // TOOD: N+1 query here
+            const rewardedUsers = (
+              await Promise.all(
+                completedUsers.map(async (userId) => {
+                  const limit = await this.challengesService.getPointLimit(
+                    userId,
+                    now,
+                  );
+                  return limit.pointsLeft > 0 ? userId : null;
+                }),
+              )
+            ).filter(Boolean);
+
             await this.prisma.$transaction([
               this.prisma.user.updateMany({
                 where: { userId: { in: rewardedUsers } },
@@ -135,7 +149,7 @@ export class ChallengeGateway
               }),
               this.prisma.challenge.update({
                 where: { challengeId: c.challengeId },
-                data: { rewards_released_at: new Date() },
+                data: { rewards_released_at: now },
               }),
             ]);
             return rewardedUsers;

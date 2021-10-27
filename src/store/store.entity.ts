@@ -10,6 +10,7 @@ export class PurchasePost {
 
 // For internal reference only
 export const CHALLENGE_COMPLETION_AWARD = 100;
+export const CHALLENGE_WINDOW_LIMIT = 500;
 
 export const POWER_UP_PRICE = {
   GRIEF: 500,
