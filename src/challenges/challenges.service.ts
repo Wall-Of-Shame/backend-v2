@@ -335,7 +335,7 @@ export class ChallengesService {
         this.hasChallengeEnded(participantOf.challenge.endAt) &&
         this.hasUserAccepted(participantOf.joined_at)
       ) {
-        if (this.isInVotingState(participantOf.challenge.endAt, now)) {
+        if (this.isInVotingState(participantOf.challenge.endAt, now) && c.participantCount > 2) {
           // votingPeriod
           votingPeriod.push(c);
         } else {
