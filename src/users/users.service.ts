@@ -335,7 +335,7 @@ export class UsersService {
           AND "avatar_bg" IS NOT NULL
           AND "totalFailedCount" > 0
         ORDER BY "totalFailedCount" DESC, "username" ASC
-        LIMIT 100
+        LIMIT 50
       `;
 
       return results.map((user) => ({

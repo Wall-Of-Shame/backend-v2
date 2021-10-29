@@ -1139,7 +1139,7 @@ export class ChallengesService {
         { user: { name: 'asc' } },
         { challengeId: 'asc' },
       ],
-      take: 100,
+      take: 50,
     });
 
     const result: ShamedList[] = raw.map((p) => ({
