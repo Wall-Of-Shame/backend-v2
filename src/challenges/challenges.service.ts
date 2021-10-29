@@ -151,8 +151,8 @@ export class ChallengesService {
       challengeId: c.challengeId,
       title: c.title,
       description: c.description ?? undefined,
-      isFeatured: c.is_featured,
-      imageURL: c.is_featured ? c.image_url : undefined,
+      isFeatured: !!c.feature_rank,
+      imageURL: c.feature_rank ? c.image_url : undefined,
       startAt: c.startAt ? c.startAt.toISOString() : null,
       endAt: c.endAt.toISOString(),
       type: c.type,
@@ -335,7 +335,10 @@ export class ChallengesService {
         this.hasChallengeEnded(participantOf.challenge.endAt) &&
         this.hasUserAccepted(participantOf.joined_at)
       ) {
-        if (this.isInVotingState(participantOf.challenge.endAt, now) && c.participantCount > 2) {
+        if (
+          this.isInVotingState(participantOf.challenge.endAt, now) &&
+          c.participantCount > 2
+        ) {
           // votingPeriod
           votingPeriod.push(c);
         } else {
@@ -391,7 +394,11 @@ export class ChallengesService {
         },
         owner: true,
       },
-      orderBy: [{ participants: { _count: 'desc' } }, { title: 'desc' }],
+      orderBy: [
+        { feature_rank: 'asc' },
+        { participants: { _count: 'desc' } },
+        { title: 'desc' },
+      ],
     });
 
     const publicChallenges = rawPublicChallenges.map(this.formatChallenge);

@@ -74,8 +74,8 @@ model Challenge {
   result_released_at  DateTime?
   rewards_released_at DateTime?
 
-  is_featured Boolean @default(false)
-  image_url   String?
+  feature_rank Int?
+  image_url    String?
 
   votes Vote[] // unwise to query through here, too messy
 }

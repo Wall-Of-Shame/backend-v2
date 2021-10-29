@@ -27,6 +27,11 @@ const questions = [
     name: 'imageUrl',
     message: 'Challenge imageUrl',
   },
+  {
+    type: 'input',
+    name: 'rank',
+    message: 'Challenge Rank',
+  },
 ];
 
 prompt(questions).then((answers) => {
@@ -35,15 +40,22 @@ prompt(questions).then((answers) => {
   const startAt = answers['startAt'];
   const endAt = answers['endAt'];
   const imageUrl = answers['imageUrl'];
+  const rank = answers['rank'];
 
-  if (!title || !description || !startAt || !endAt || !imageUrl) {
+  if (!title || !description || !startAt || !endAt || !imageUrl || !rank) {
     console.log('Invalid input');
   }
 
   const startAtDate = new Date(startAt);
   const endAtDate = new Date(endAt);
+  const rankInt = parseInt(rank);
 
-  seedFeaturedCli(imageUrl, title, description, startAtDate, endAtDate).catch(
-    (e) => console.log(e),
-  );
+  seedFeaturedCli(
+    imageUrl,
+    title,
+    description,
+    startAtDate,
+    endAtDate,
+    rankInt,
+  ).catch((e) => console.log(e));
 });
