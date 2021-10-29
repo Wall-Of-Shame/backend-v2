@@ -164,6 +164,7 @@ export async function featuredCli(
   description: string,
   startAt: Date,
   endAt: Date,
+  rank: number,
 ): Promise<void> {
   if (!process.env.EMAIL_HOST) {
     console.log('No host');
@@ -200,13 +201,13 @@ export async function featuredCli(
         type: ChallengeType.NOT_COMPLETED,
         ownerId: superuserId,
         invite_type: ChallengeInviteType.PUBLIC,
-        is_featured: true,
+        feature_rank: rank,
       },
     })
     .then((c) => console.log('Success', c.challengeId));
 }
 
-const featuredChallenges: [string, string, string, Date, Date][] = [
+const featuredChallenges: [string, string, string, Date, Date, number][] = [
   [
     'Vote Wall of Shame for the 19th STePs',
     `The School of Computing Term Project Showcase (STePS) is one of the largest event, similar to Trade shows, aims to bring together and present selected student projects/products in the School of Computing (SoC) to facilitate independent peer learning, entrepreneurship and effective employment with modern flipped career-fair approach.
@@ -217,6 +218,7 @@ const featuredChallenges: [string, string, string, Date, Date][] = [
     'https://res.cloudinary.com/wallofshame/image/upload/v1635056434/19thsteps.png',
     new Date(2021, 10, 14),
     new Date(2021, 10, 15),
+    1,
   ],
   [
     'National Steps Challenge Season 6',
@@ -230,6 +232,7 @@ const featuredChallenges: [string, string, string, Date, Date][] = [
     'https://res.cloudinary.com/wallofshame/image/upload/v1635056443/nationalstepschallenge.png',
     new Date(2021, 10, 1),
     new Date(2021, 11, 25),
+    3,
   ],
   [
     'Call For Ideas Fund 2021',
@@ -238,6 +241,7 @@ const featuredChallenges: [string, string, string, Date, Date][] = [
     'https://res.cloudinary.com/wallofshame/image/upload/v1635056443/callforideasfund.png',
     new Date(2021, 11, 1),
     new Date(2021, 11, 20),
+    2,
   ],
 ];
 
@@ -248,7 +252,7 @@ export async function featured(): Promise<void> {
   }
 
   featuredChallenges.forEach(async (c) => {
-    await featuredCli(c[2], c[0], c[1], c[3], c[4]);
+    await featuredCli(c[2], c[0], c[1], c[3], c[4], c[5]);
   });
 
   return;
@@ -271,8 +275,9 @@ export async function seedFeaturedCli(
   description: string,
   startAt: Date,
   endAt: Date,
+  rank: number,
 ): Promise<void> {
-  featuredCli(imageUrl, title, description, startAt, endAt)
+  featuredCli(imageUrl, title, description, startAt, endAt, rank)
     .catch((e) => {
       console.error(e);
       process.exit(1);
