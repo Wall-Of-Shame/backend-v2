@@ -105,9 +105,11 @@ export class ChallengesController {
           challengeId,
           targetUserId,
         );
+        await this.gateway.challengeUpdateNotify(challengeId);
         return;
       case PowerUp.PROTEC:
         await this.challengesService.useProtec(userId, challengeId);
+        await this.gateway.challengeUpdateNotify(challengeId);
         return;
       default:
     }
