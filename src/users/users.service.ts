@@ -26,11 +26,24 @@ export class UsersService {
   // Creates a user
   async create(createUserDto: CreateUserDto): Promise<UserData> {
     try {
-      const { email, messagingToken } = createUserDto;
+      const {
+        username,
+        name,
+        avatar_animal,
+        avatar_color,
+        avatar_bg,
+        email,
+        messagingToken,
+      } = createUserDto;
 
       if (messagingToken) {
         await this.prisma.user.create({
           data: {
+            username,
+            name,
+            avatar_animal,
+            avatar_color,
+            avatar_bg,
             email,
             fb_reg_token: messagingToken,
             fb_reg_token_time: new Date(),
@@ -39,6 +52,11 @@ export class UsersService {
       } else {
         await this.prisma.user.create({
           data: {
+            username,
+            name,
+            avatar_animal,
+            avatar_color,
+            avatar_bg,
             email,
           },
         });
@@ -81,10 +99,11 @@ export class UsersService {
   async findOne(args: {
     userId?: string | undefined;
     email?: string | undefined;
+    username?: string | undefined;
   }): Promise<UserData | null> {
-    const { userId, email } = args;
+    const { userId, email, username } = args;
 
-    if (!userId && !email) {
+    if (!userId && !email && !username) {
       throw new Error('Invalid call - need to supply either email or userId');
     }
 
@@ -102,6 +121,13 @@ export class UsersService {
           SELECT *
           FROM "UserWithMetaData"
           WHERE "email" = ${email}
+          LIMIT 1
+        `;
+      } else if (username) {
+        results = await this.prisma.$queryRaw<UserWithMetaDataResult>`
+          SELECT *
+          FROM "UserWithMetaData"
+          WHERE "username" = ${username}
           LIMIT 1
         `;
       }
