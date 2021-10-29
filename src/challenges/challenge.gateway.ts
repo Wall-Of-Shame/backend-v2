@@ -103,7 +103,7 @@ export class ChallengeGateway
           })
           .then((_) => {
             this.wsLogger.log(`Notifying everyone on ${c.challengeId}`);
-            this.releaseResultsNotify(this.server, c.challengeId);
+            this.releaseResultsNotify(c.challengeId);
           });
       }),
     );
@@ -233,7 +233,7 @@ export class ChallengeGateway
     try {
       if (challengeId) {
         socket.join(challengeId);
-        await this.challengeUpdateNotify(this.server, challengeId);
+        await this.challengeUpdateNotify(challengeId);
         this.wsLogger.log(`Socket ${socket.id}: Emited ${event}`);
       }
     } catch (error) {
@@ -313,7 +313,7 @@ export class ChallengeGateway
     try {
       // TODO: refactor as this is same code as join room
       socket.join(challengeId);
-      await this.challengeUpdateNotify(this.server, challengeId);
+      await this.challengeUpdateNotify(challengeId);
       this.wsLogger.log(`Socket ${socket.id}: Emited ${event}`);
     } catch (error) {
       console.log(error);
@@ -391,7 +391,7 @@ export class ChallengeGateway
     }
 
     try {
-      await this.challengeUpdateNotify(this.server, challengeId);
+      await this.challengeUpdateNotify(challengeId);
     } catch (error) {
       console.log(error);
       throw new WsException('Failed to notify room');
@@ -469,22 +469,12 @@ export class ChallengeGateway
     );
   }
 
-  private async releaseResultsNotify(
-    server: Server,
-    challengeId: string,
-  ): Promise<void> {
-    await this.emitNewGlobalWall(server, EVENTS.globalLeaderboard);
-    await this.emitNewShamedListEntries(
-      server,
-      challengeId,
-      EVENTS.shameListUpdate,
-    );
+  private async releaseResultsNotify(challengeId: string): Promise<void> {
+    await this.emitNewGlobalWall(EVENTS.globalLeaderboard);
+    await this.emitNewShamedListEntries(challengeId, EVENTS.shameListUpdate);
   }
 
-  private async challengeUpdateNotify(
-    server: Server,
-    challengeId: string,
-  ): Promise<void> {
+  async challengeUpdateNotify(challengeId: string): Promise<void> {
     try {
       if (!challengeId) {
         return;
@@ -493,32 +483,28 @@ export class ChallengeGateway
       const data: ChallengeData = await this.challengesService.findOne(
         challengeId,
       );
-      server.in(challengeId).emit(EVENTS.roomUpdate, data);
+      this.server.in(challengeId).emit(EVENTS.roomUpdate, data);
     } catch (error) {
       console.log(error);
       throw new WsException('Failed to emit roomUpdate');
     }
   }
 
-  private async emitNewGlobalWall(
-    server: Server,
-    event: string,
-  ): Promise<void> {
+  private async emitNewGlobalWall(event: string): Promise<void> {
     const results = await this.usersService.getGlobalLeaderboard();
-    server.emit(event, results);
+    this.server.emit(event, results);
     this.wsLogger.log(
       `Emitted ${event} toa all sockets with ${results.length} UserList entries`,
     );
   }
 
   private async emitNewShamedListEntries(
-    server: Server,
     challengeId: string,
     event: string,
   ): Promise<void> {
     const results: ShamedList[] =
       await this.challengesService.getShamedListForChallenge(challengeId);
-    server.emit(event, results);
+    this.server.emit(event, results);
     this.wsLogger.log(
       `Emitted ${event} toa all sockets with ${results.length} ShamedList entries`,
     );

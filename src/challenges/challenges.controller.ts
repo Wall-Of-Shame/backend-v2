@@ -105,14 +105,17 @@ export class ChallengesController {
           challengeId,
           targetUserId,
         );
+        await this.gateway.challengeUpdateNotify(challengeId);
         return;
       case PowerUp.PROTEC:
         await this.challengesService.useProtec(userId, challengeId);
+        await this.gateway.challengeUpdateNotify(challengeId);
         return;
       default:
     }
   }
 
+  /*
   @Post(':id/accept')
   @UseGuards(JwtAuthGuard)
   @HttpCode(200)
@@ -134,7 +137,6 @@ export class ChallengesController {
     return this.challengesService.completeChallenge(userId, challengeId);
   }
 
-  /*
   // Deprecated due to change in workflow
   @Post(':id/vetoResults')
   @UseGuards(JwtAuthGuard)
