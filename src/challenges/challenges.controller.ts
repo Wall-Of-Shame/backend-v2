@@ -113,6 +113,7 @@ export class ChallengesController {
     }
   }
 
+  /*
   @Post(':id/accept')
   @UseGuards(JwtAuthGuard)
   @HttpCode(200)
@@ -134,7 +135,6 @@ export class ChallengesController {
     return this.challengesService.completeChallenge(userId, challengeId);
   }
 
-  /*
   // Deprecated due to change in workflow
   @Post(':id/vetoResults')
   @UseGuards(JwtAuthGuard)
