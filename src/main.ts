@@ -5,6 +5,7 @@ import { AppModule } from './app.module';
 import { v2 as cloudinary } from 'cloudinary';
 import { ConfigService } from '@nestjs/config';
 import { json, urlencoded } from 'express';
+import { CorsOptions } from '@nestjs/common/interfaces/external/cors-options.interface';
 
 admin.initializeApp({
   credential: admin.credential.cert({
@@ -21,11 +22,14 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_SECRET,
 });
 
+const corsOptions: CorsOptions = {
+  origin:
+    process.env.NODE_ENV === 'production' ? 'https://www.wallofshame.io' : '*',
+};
+
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
-    cors: {
-      origin: '*',
-    },
+    cors: corsOptions,
   });
   app.setGlobalPrefix('api/v1');
 
