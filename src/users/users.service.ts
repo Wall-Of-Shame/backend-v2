@@ -363,12 +363,16 @@ export class UsersService {
     try {
       const recentIds: string[] = await this.prisma.contact
         .findMany({
-          where: { pers1_id: userId },
+          where: { pers1_id: userId, accepted_at: { not: null } },
           select: {
             pers2_id: true,
           },
         })
         .then((result) => result.map((v) => v.pers2_id));
+
+      if (recentIds.length === 0) {
+        return [];
+      }
 
       const results = await this.prisma.$queryRaw<UserWithMetaDataResult>`
         SELECT *
@@ -381,7 +385,7 @@ export class UsersService {
           AND "userId" IN (${Prisma.join(recentIds)})
           AND "totalFailedCount" > 0
         ORDER BY "totalFailedCount" DESC, "username" ASC
-        LIMIT 100
+        LIMIT 50
       `;
 
       return results.map((user) => ({

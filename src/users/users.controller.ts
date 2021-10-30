@@ -11,7 +11,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { UserId } from '../auth/user.decorator';
 import { UsersService } from './users.service';
 
-type IndexOperation = 'search' | 'wallGlobal';
+type IndexOperation = 'search' | 'wallGlobal' | 'wallFriends';
 
 @Controller('users')
 export class UsersController {
@@ -20,7 +20,7 @@ export class UsersController {
   /**
    * Route:
    *
-   * operation: 'search' | 'wallGlobal'
+   * operation: 'search' | 'wallGlobal' | 'wallFriend'
    */
   @Get()
   @UseGuards(JwtAuthGuard)
@@ -33,6 +33,8 @@ export class UsersController {
       return this.usersService.search(query);
     } else if (operation === 'wallGlobal') {
       return this.usersService.getGlobalLeaderboard();
+    } else if (operation === 'wallFriends') {
+      return this.usersService.getUserLeaderboard(userId);
     } else {
       throw new HttpException('Bad Request', HttpStatus.BAD_REQUEST);
     }
