@@ -361,7 +361,7 @@ export class UsersService {
   //
   async getUserLeaderboard(userId: string): Promise<UserList[]> {
     try {
-      const recentIds: string[] = await this.prisma.contact
+      const recentIds = await this.prisma.contact
         .findMany({
           where: { pers1_id: userId, accepted_at: { not: null } },
           select: {
@@ -370,8 +370,9 @@ export class UsersService {
         })
         .then((result) => result.map((v) => v.pers2_id));
 
-      if (recentIds.length === 0) {
-        return [];
+      const includesSelf = recentIds.find((id) => id === userId);
+      if (!includesSelf) {
+        recentIds.push(userId);
       }
 
       const results = await this.prisma.$queryRaw<UserWithMetaDataResult>`
