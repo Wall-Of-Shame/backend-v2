@@ -81,7 +81,6 @@ export class ChallengesService {
   ): ChallengeData {
     const { owner, participants } = c;
 
-    const accepted: UserMini[] = [];
     const pending: UserMini[] = [];
     const notCompleted: UserMini[] = [];
     const completed: UserMini[] = [];
@@ -168,7 +167,8 @@ export class ChallengesService {
           color: owner.avatar_color!,
         },
       },
-      participantCount: accepted.length,
+      participantCount:
+        completed.length + notCompleted.length + $protected.length,
       participants: {
         griefList,
         accepted: {
