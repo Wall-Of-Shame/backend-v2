@@ -86,6 +86,7 @@ export class UsersService {
           avatar_color: avatar.color,
           cfg_deadline_reminder: settings.deadlineReminder,
           cfg_invites_notif: settings.invitations,
+          has_initialised: true,
         },
       });
     } catch (error) {
