@@ -174,6 +174,7 @@ export class UsersService {
       username: user.username,
       name: user.name,
       email: user.email,
+      hasInitialised: user.has_initialised,
       avatar: {
         animal: user.avatar_animal,
         color: user.avatar_color,

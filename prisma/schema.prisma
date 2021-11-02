@@ -44,6 +44,7 @@ model User {
   avatar_animal         AvatarAnimal?
   avatar_color          AvatarColor?
   avatar_bg             String?
+  has_initialised       Boolean       @default(false)
 
   owner_of         Challenge[]
   participating_in Participant[]
