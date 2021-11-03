@@ -24,7 +24,12 @@ cloudinary.config({
 
 const corsOptions: CorsOptions = {
   origin:
-    process.env.NODE_ENV === 'production' ? 'https://www.wallofshame.io' : '*',
+    process.env.NODE_ENV === 'production'
+      ? [
+          'https://www.wallofshame.io',
+          'https://wall-of-shame-staging.netlify.app',
+        ]
+      : '*',
 };
 
 async function bootstrap() {
