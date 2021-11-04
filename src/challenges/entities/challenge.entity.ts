@@ -53,6 +53,8 @@ export class ShamedList {
     tomato: number;
     egg: number;
     poop: number;
+    ben: number;
+    soo: number;
   };
 }
 

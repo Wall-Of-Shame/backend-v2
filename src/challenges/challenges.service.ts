@@ -1113,6 +1113,8 @@ export class ChallengesService {
         tomato: p.effect_tomato,
         egg: p.effect_egg,
         poop: p.effect_poop,
+        ben: p.effect_prof_ben,
+        soo: p.effect_uncle_soo
       },
     };
 
@@ -1157,6 +1159,8 @@ export class ChallengesService {
         tomato: p.effect_tomato,
         egg: p.effect_egg,
         poop: p.effect_poop,
+        ben: p.effect_prof_ben,
+        soo: p.effect_uncle_soo
       },
     }));
 
@@ -1201,6 +1205,8 @@ export class ChallengesService {
         tomato: p.effect_tomato,
         egg: p.effect_egg,
         poop: p.effect_poop,
+        ben: p.effect_prof_ben,
+        soo: p.effect_uncle_soo
       },
     }));
 

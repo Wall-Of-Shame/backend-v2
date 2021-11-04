@@ -71,6 +71,26 @@ export class ShameService {
           },
         });
         return;
+      case 'BEN':
+        await this.prisma.participant.update({
+          where: {
+            challengeId_userId: { challengeId, userId: targetUserId },
+          },
+          data: {
+            effect_prof_ben: { increment: count },
+          },
+        });
+        return;
+      case 'SOO':
+        await this.prisma.participant.update({
+          where: {
+            challengeId_userId: { challengeId, userId: targetUserId },
+          },
+          data: {
+            effect_uncle_soo: { increment: count },
+          },
+        });
+        return;
       default:
         throw new HttpException('Unknown effect type', HttpStatus.BAD_REQUEST);
     }

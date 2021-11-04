@@ -1,4 +1,4 @@
-export type EffectType = 'TOMATO' | 'EGG' | 'POOP';
+export type EffectType = 'TOMATO' | 'EGG' | 'POOP' | 'SOO' | 'BEN';
 
 export class ThrowItemPost {
   effect: EffectType;
