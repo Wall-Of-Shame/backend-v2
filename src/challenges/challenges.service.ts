@@ -379,11 +379,12 @@ export class ChallengesService {
   }
 
   async getPublicChallenges(userId: string): Promise<PublicChallengeList> {
-    const rawPublicChallenges = await this.prisma.challenge.findMany({
+    const rawFeaturedChallenges = await this.prisma.challenge.findMany({
       where: {
         invite_type: ChallengeInviteType.PUBLIC,
-        startAt: { gte: new Date() },
         endAt: { gt: new Date() },
+        feature_rank: { not: null },
+        image_url: { not: null },
       },
       include: {
         participants: {
@@ -394,25 +395,33 @@ export class ChallengesService {
         },
         owner: true,
       },
-      orderBy: [
-        { feature_rank: 'asc' },
-        { participants: { _count: 'desc' } },
-        { title: 'desc' },
-      ],
+      orderBy: [{ feature_rank: 'asc' }, { participants: { _count: 'desc' } }],
     });
+    const featured: ChallengeData[] = rawFeaturedChallenges.map(
+      this.formatChallenge,
+    );
 
-    const publicChallenges = rawPublicChallenges.map(this.formatChallenge);
-
-    const featured: ChallengeData[] = [];
-    const others: ChallengeData[] = [];
-
-    for (const c of publicChallenges) {
-      if (c.isFeatured && c.imageURL) {
-        featured.push(c);
-      } else {
-        others.push(c);
-      }
-    }
+    const rawPublicChallenges = await this.prisma.challenge.findMany({
+      where: {
+        invite_type: ChallengeInviteType.PUBLIC,
+        startAt: { gte: new Date() },
+        endAt: { gt: new Date() },
+        feature_rank: null,
+      },
+      include: {
+        participants: {
+          include: {
+            user: true,
+            griefed_by: true,
+          },
+        },
+        owner: true,
+      },
+      orderBy: [{ participants: { _count: 'desc' } }, { title: 'desc' }],
+    });
+    const others: ChallengeData[] = rawPublicChallenges.map(
+      this.formatChallenge,
+    );
 
     return { featured, others };
   }
@@ -529,6 +538,31 @@ export class ChallengesService {
   }
 
   async acceptChallenge(userId: string, challengeId: string): Promise<void> {
+    const challenge = await this.prisma.challenge.findUnique({
+      where: { challengeId },
+    });
+    if (!challenge) {
+      throw new HttpException('Not found', HttpStatus.NOT_FOUND);
+    }
+    if (challenge.feature_rank && this.hasChallengeEnded(challenge.endAt)) {
+      // if featured challenge
+      // user can only accept if it has not ended
+      throw new HttpException(
+        'Invalid challenge state',
+        HttpStatus.BAD_REQUEST,
+      );
+    } else if (
+      !challenge.feature_rank &&
+      this.hasChallengeStarted(challenge.startAt)
+    ) {
+      // if not featured challenge
+      // user can only accept if it has not started
+      throw new HttpException(
+        'Invalid challenge state',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
     try {
       // accept only valid users
       await this.prisma.user.findFirst({
@@ -1114,7 +1148,7 @@ export class ChallengesService {
         egg: p.effect_egg,
         poop: p.effect_poop,
         ben: p.effect_prof_ben,
-        soo: p.effect_uncle_soo
+        soo: p.effect_uncle_soo,
       },
     };
 
@@ -1160,7 +1194,7 @@ export class ChallengesService {
         egg: p.effect_egg,
         poop: p.effect_poop,
         ben: p.effect_prof_ben,
-        soo: p.effect_uncle_soo
+        soo: p.effect_uncle_soo,
       },
     }));
 
@@ -1206,7 +1240,7 @@ export class ChallengesService {
         egg: p.effect_egg,
         poop: p.effect_poop,
         ben: p.effect_prof_ben,
-        soo: p.effect_uncle_soo
+        soo: p.effect_uncle_soo,
       },
     }));
 
