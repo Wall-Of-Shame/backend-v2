@@ -538,6 +538,31 @@ export class ChallengesService {
   }
 
   async acceptChallenge(userId: string, challengeId: string): Promise<void> {
+    const challenge = await this.prisma.challenge.findUnique({
+      where: { challengeId },
+    });
+    if (!challenge) {
+      throw new HttpException('Not found', HttpStatus.NOT_FOUND);
+    }
+    if (challenge.feature_rank && this.hasChallengeEnded(challenge.endAt)) {
+      // if featured challenge
+      // user can only accept if it has not ended
+      throw new HttpException(
+        'Invalid challenge state',
+        HttpStatus.BAD_REQUEST,
+      );
+    } else if (
+      !challenge.feature_rank &&
+      this.hasChallengeStarted(challenge.startAt)
+    ) {
+      // if not featured challenge
+      // user can only accept if it has not started
+      throw new HttpException(
+        'Invalid challenge state',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
     try {
       // accept only valid users
       await this.prisma.user.findFirst({
